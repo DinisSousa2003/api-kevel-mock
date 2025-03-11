@@ -47,16 +47,16 @@ class terminusDB(Database):
         # doc = self.schema.import_objects(**profile.model_dump())  #Uncomment if schema is added
 
         # Insert into TerminusDB
-        doc = profile.model_dump(exclude="user_id")
-        doc["@id"] = "JSONDocument" + "/" + profile.user_id
+        doc = profile.model_dump(exclude="userId")
+        doc["@id"] = "JSONDocument" + "/" + profile.userId
         self.client.insert_document(doc, raw_json=True)
         return profile
         
 
-    async def get_user(self, user_id: str, timestamp: Optional[int] = None) -> Optional[UserProfile]:
-        doc = self.client.get_document("JSONDocument" + "/" + user_id)
+    async def get_user(self, userId: str, timestamp: Optional[int] = None) -> Optional[UserProfile]:
+        doc = self.client.get_document("JSONDocument" + "/" + userId)
         if doc:
-            doc["user_id"] = user_id
+            doc["userId"] = userId
             return UserProfile(**doc)
         return None
     

@@ -1,19 +1,23 @@
 from fastapi import FastAPI, HTTPException
 from contextlib import asynccontextmanager
-from models import UserProfile, Attributes
+from models import UserProfile
 from db.in_memory import InMemoryDB
 from db.XTDB import XTDB
 from db.terminusDB import terminusDB
-from typing import Optional, List
+from typing import Optional
 from config import config
+import json
+from time import sleep
+from rules import get_rules
+from datetime import datetime
 
 db = None
+rules = get_rules(["most-recent"])
 
 @asynccontextmanager
 async def startup(app: FastAPI):
     """Initialize database connection at app startup."""
     global db
-    
 
     if config.DEBUG:
         db = InMemoryDB()
@@ -31,12 +35,14 @@ async def startup(app: FastAPI):
 
 app = FastAPI(lifespan=startup)
 
-@app.put("/users/{user_id}")
-async def update_user(user_id: str, attributes: Attributes):
+print(rules)
+
+@app.patch("/users/")
+async def update_user(profile: UserProfile):
     """Update or insert a user profile."""
-    profile = UserProfile(user_id=user_id, attributes=attributes.attributes, timestamp=attributes.timestamp)
+
     profile = await db.update_user(profile)
-    return {"message": "Profile updated successfully!", "user_id": user_id, "timestamp": profile.timestamp}
+    return {"message": "Profile updated successfully!", "userId": profile.userId, "timestamp": datetime.fromtimestamp(profile.timestamp/1000).strftime('%Y-%m-%d %H:%M:%S')}
 
 @app.get("/users/all")
 async def get_all_users():
@@ -51,10 +57,10 @@ async def get_all_users():
     return docs
 
 
-@app.get("/users/{user_id}", response_model=UserProfile)
-async def get_user(user_id: str, timestamp: Optional[int] = None):
+@app.get("/users/{userId}", response_model=UserProfile)
+async def get_user(userId: str, timestamp: Optional[int] = None):
     """Retrieve the latest or specific version of a user profile."""
-    profile = await db.get_user(user_id, timestamp)
+    profile = await db.get_user(userId, timestamp)
     if not profile:
         raise HTTPException(status_code=404, detail="No user found")
     return profile

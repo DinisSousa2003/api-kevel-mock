@@ -3,7 +3,7 @@ from typing import Optional, Dict, Any
 from datetime import datetime
 
 class UserProfile(BaseModel):
-    user_id: str
+    userId: str
     attributes: Dict[str, Any]  # Key-value store for user attributes
     timestamp: Optional[int] = None  # Unix timestamp (optional)
 

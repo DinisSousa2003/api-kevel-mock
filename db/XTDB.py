@@ -5,6 +5,7 @@ from urllib.parse import urlparse
 import psycopg as pg
 import json
 from datetime import datetime, timezone
+import re
 
 class XTDB(Database):
 
@@ -36,22 +37,13 @@ class XTDB(Database):
 
         if self.conn is None:
             raise Exception("Database connection not established")
-        
-        query = """INSERT INTO customer (_id, attributes)
-                VALUES (%s, %s)"""
-            
-        params = (profile.user_id, json.dumps(profile.attributes))
-        
-        if profile.timestamp:
-            # Convert Unix timestamp to a timezone-aware datetime object
-            timestamp_dt = datetime.fromtimestamp(profile.timestamp, tz=timezone.utc)
 
-            query = """INSERT INTO customer (_id, attributes, _valid_from)
-                VALUES (%s, %s, %s)"""
-            
-            params = (profile.user_id, json.dumps(profile.attributes), timestamp_dt)
+        timestamp = datetime.fromtimestamp(profile.timestamp/1000, tz=timezone.utc) #ms to seconds
 
-        
+        # Ensure that we are passing the record directly (not as JSON string)
+        params = (timestamp, profile.userId)
+
+        query = f"""PATCH INTO customer FOR VALID_TIME FROM %s RECORDS {{_id: %s, attributes: {json.dumps(profile.attributes)}}};"""
         
         async with self.conn.cursor() as cur:
             
@@ -60,7 +52,7 @@ class XTDB(Database):
         return profile
         
 
-    async def get_user(self, user_id: str, timestamp: Optional[int] = None) -> Optional[UserProfile]:
+    async def get_user(self, userId: str, timestamp: Optional[int] = None) -> Optional[UserProfile]:
 
         if self.conn is None:
             raise Exception("Database connection not established")
@@ -68,20 +60,20 @@ class XTDB(Database):
         query = """SELECT c.*, _valid_from, _valid_to FROM customer AS c
                 WHERE _id = %s"""
 
-        params = (user_id,)
+        params = (userId,)
 
         if timestamp: 
             query = """SELECT c.*, _valid_from, _valid_to, _system_from, _system_to FROM customer
                 FOR VALID_TIME AS OF TIMESTAMP %s AS c
                 WHERE _id = %s"""
-            params = (user_id, timestamp)
+            params = (userId, timestamp)
 
         
         async with self.conn.cursor() as cur:
             await cur.execute(query, params)
             row = await cur.fetchone()
             if row:
-                return UserProfile(user_id=row[0], attributes=json.loads(row[1]), timestamp=int(row[2].timestamp()))
+                return UserProfile(userId=row[0], attributes=json.loads(row[1]), timestamp=int(row[2].timestamp()))
             return None
         
     async def get_all_documents(self):
@@ -89,8 +81,11 @@ class XTDB(Database):
         if self.conn is None:
             raise Exception("Database connection not established")
 
-        query = """SELECT c.*, _valid_from, _valid_to, system_from, _system_to FROM customer
-                FOR ALL SYSTEM_TIME FOR ALL VALID_TIME AS c"""
+        #query = """SELECT c.*, _valid_from, _valid_to, _system_from, _system_to FROM customer FOR ALL SYSTEM_TIME FOR ALL VALID_TIME AS c"""
+        
+        #query = """SELECT c.* FROM customer AS c"""
+
+        query = """SELECT c._id, c.attributes, c.attributes['f86a8b7ef428c89ed1f4d36cdf38b5e4'] FROM customer AS c"""
 
         async with self.conn.cursor() as cur:
             await cur.execute(query)

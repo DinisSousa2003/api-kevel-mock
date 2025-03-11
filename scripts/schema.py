@@ -31,11 +31,11 @@ class UserProfileSchema(DocumentTemplate):
 
     Attributes
     ----------
-    user_id: str
+    userId: str
     attributes: list with attributes
     timestamp: unix_timestamp
     """
-    user_id: str
+    userId: str
     attributes: Optional[List["Attribute"]]  # Key-value store for user attributes
     timestamp: int  # Unix timestamp (optional)
 

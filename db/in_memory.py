@@ -12,19 +12,19 @@ class InMemoryDB(Database):
         if not profile.timestamp: 
             profile.timestamp = int(time.time())
 
-        old_profile = self.store.get(profile.user_id)
+        old_profile = self.store.get(profile.userId)
 
         if old_profile:
             if old_profile.timestamp > profile.timestamp:
                 return old_profile
             
-        self.store[profile.user_id] = profile
+        self.store[profile.userId] = profile
         return profile
 
         
 
-    async def get_user(self, user_id: str, timestamp: Optional[int] = None) -> Optional[UserProfile]:
-        profile = self.store.get(user_id)
+    async def get_user(self, userId: str, timestamp: Optional[int] = None) -> Optional[UserProfile]:
+        profile = self.store.get(userId)
         
         if profile and timestamp:
             if profile.timestamp <= timestamp:

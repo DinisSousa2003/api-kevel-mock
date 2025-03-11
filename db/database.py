@@ -8,5 +8,5 @@ class Database(ABC):
         pass
 
     @abstractmethod
-    async def get_user(self, user_id: str, timestamp: Optional[int] = None) -> Optional[UserProfile]:
+    async def get_user(self, userId: str, timestamp: Optional[int] = None) -> Optional[UserProfile]:
         pass
