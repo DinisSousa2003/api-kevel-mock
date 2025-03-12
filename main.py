@@ -35,7 +35,7 @@ async def startup(app: FastAPI):
 
 app = FastAPI(lifespan=startup)
 
-print(rules)
+#print(rules)
 
 @app.patch("/users/")
 async def update_user(profile: UserProfile):

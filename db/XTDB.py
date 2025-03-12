@@ -62,18 +62,21 @@ class XTDB(Database):
 
         params = (userId,)
 
-        if timestamp: 
-            query = """SELECT c.*, _valid_from, _valid_to, _system_from, _system_to FROM customer
-                FOR VALID_TIME AS OF TIMESTAMP %s AS c
+        if timestamp is not None: 
+            print("ola")
+            query = """SELECT c.*, _valid_from, _valid_to FROM customer
+                FOR VALID_TIME AS OF %s AS c
                 WHERE _id = %s"""
-            params = (userId, timestamp)
+            
+            timestamp = datetime.fromtimestamp(timestamp, tz=timezone.utc) #assuming it is in seconds
+            params = (timestamp, userId)
 
         
         async with self.conn.cursor() as cur:
             await cur.execute(query, params)
             row = await cur.fetchone()
             if row:
-                return UserProfile(userId=row[0], attributes=json.loads(row[1]), timestamp=int(row[2].timestamp()))
+                return UserProfile(userId=row[0], attributes=row[1], timestamp=int(row[2].timestamp()))
             return None
         
     async def get_all_documents(self):
@@ -83,9 +86,11 @@ class XTDB(Database):
 
         #query = """SELECT c.*, _valid_from, _valid_to, _system_from, _system_to FROM customer FOR ALL SYSTEM_TIME FOR ALL VALID_TIME AS c"""
         
-        #query = """SELECT c.* FROM customer AS c"""
+        query = """SELECT * FROM customer"""
 
-        query = """SELECT c._id, c.attributes, c.attributes['f86a8b7ef428c89ed1f4d36cdf38b5e4'] FROM customer AS c"""
+        #WHY IS THIS NOT WORKING????
+
+        #query = """SELECT c._id, c.attributes, c.attributes['f86a8b7ef428c89ed1f4d36cdf38b5e4'] FROM customer AS c"""
 
         async with self.conn.cursor() as cur:
             await cur.execute(query)
