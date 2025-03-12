@@ -1,7 +1,6 @@
 import json
 from typing import Optional, List
 
-rules = None
 with open('dataset/definitions.json') as json_definitions:
         rules = json.load(json_definitions)
         #print(1, rules)
@@ -10,8 +9,8 @@ with open('dataset/definitions.json') as json_definitions:
 
 def get_rules(to_use: Optional[List[str]] = []):
         if len(to_use) == 0:
-                print("\n\n\n",2, rules)
                 return rules
         return {k: v for (k, v) in rules.items() if v in to_use}
 
 
+RULES = get_rules()

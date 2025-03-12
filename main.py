@@ -6,13 +6,11 @@ from db.XTDB import XTDB
 from db.terminusDB import terminusDB
 from typing import Optional
 from config import config
-import json
 from time import sleep
-from rules import get_rules
 from datetime import datetime
+import json
 
 db = None
-rules = get_rules(["most-recent"])
 
 @asynccontextmanager
 async def startup(app: FastAPI):
@@ -35,9 +33,26 @@ async def startup(app: FastAPI):
 
 app = FastAPI(lifespan=startup)
 
-#print(rules)
+@app.post("/populate/{n}")
+async def populate_from_file(n: int):
+    """Update db from reading file data"""
 
-@app.patch("/users/")
+    num = 0
+    for i in range(0, n+1):
+        print("Reading file", i)
+        with open(f'dataset/updates-{i}.jsonl', "r") as updates:
+                for line in updates:
+                        payload = json.loads(line.strip())  # Convert JSON string to dictionary
+                        profile = UserProfile(**payload)
+
+                        profile = await db.update_user(profile)
+                        #print("ok")
+
+                        num += 1
+
+    return {"message": f"Updated {updates} user profiles"}
+
+@app.patch("/users")
 async def update_user(profile: UserProfile):
     """Update or insert a user profile."""
 

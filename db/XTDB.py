@@ -6,6 +6,8 @@ import psycopg as pg
 import json
 from datetime import datetime, timezone
 import re
+from rules import RULES
+from db.queriesXTDB import Query
 
 class XTDB(Database):
 
@@ -27,11 +29,9 @@ class XTDB(Database):
             self.conn = await pg.AsyncConnection.connect(**DB_PARAMS, autocommit=True)
             print("Connected to XTDB database successfully.")
             self.conn.adapters.register_dumper(str, pg.types.string.StrDumperVarchar)
-            #TODO: POPULATE HERE
 
         except Exception as error:
             print(f"Error occurred: {error}")
-
 
     async def update_user(self, profile: UserProfile):
 
@@ -40,11 +40,17 @@ class XTDB(Database):
 
         timestamp = datetime.fromtimestamp(profile.timestamp/1000, tz=timezone.utc) #ms to seconds
 
-        # Ensure that we are passing the record directly (not as JSON string)
         params = (timestamp, profile.userId)
 
-        query = f"""PATCH INTO customer FOR VALID_TIME FROM %s RECORDS {{_id: %s, attributes: {json.dumps(profile.attributes)}}};"""
-        
+        # query = Query.SELECT_USER_BT_VT_AND_NOW
+
+        # async with self.conn.cursor() as cur:
+        #     await cur.execute(query, params)
+        #     rows = await cur.fetchall()
+        #     print(rows)
+
+        query = Query.PATCH_WITH_TIME(profile.attributes)
+
         async with self.conn.cursor() as cur:
             
             await cur.execute(query, params)
@@ -57,16 +63,14 @@ class XTDB(Database):
         if self.conn is None:
             raise Exception("Database connection not established")
 
-        query = """SELECT c.*, _valid_from, _valid_to FROM customer AS c
-                WHERE _id = %s"""
+        query = Query.SELECT_USER
+        #query = """SELECT c.*, _valid_from, _valid_to FROM customer AS c WHERE _id = %s"""
 
         params = (userId,)
 
         if timestamp is not None: 
-            print("ola")
-            query = """SELECT c.*, _valid_from, _valid_to FROM customer
-                FOR VALID_TIME AS OF %s AS c
-                WHERE _id = %s"""
+            
+            query = Query.SELECT_USER_WITH_VT
             
             timestamp = datetime.fromtimestamp(timestamp, tz=timezone.utc) #assuming it is in seconds
             params = (timestamp, userId)
@@ -84,13 +88,12 @@ class XTDB(Database):
         if self.conn is None:
             raise Exception("Database connection not established")
 
-        #query = """SELECT c.*, _valid_from, _valid_to, _system_from, _system_to FROM customer FOR ALL SYSTEM_TIME FOR ALL VALID_TIME AS c"""
+        query = Query.SELECT_ALL_CURRENT
         
-        query = """SELECT * FROM customer"""
+        query = Query.SELECT_ALL_WITH_TIMES
 
         #WHY IS THIS NOT WORKING????
-
-        #query = """SELECT c._id, c.attributes, c.attributes['f86a8b7ef428c89ed1f4d36cdf38b5e4'] FROM customer AS c"""
+        #query = SELECT_NESTED_ARGUMENTS
 
         async with self.conn.cursor() as cur:
             await cur.execute(query)
