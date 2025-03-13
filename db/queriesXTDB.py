@@ -16,6 +16,8 @@ class Query():
     
     SELECT_ALL_CURRENT = """SELECT * FROM customer;"""
 
+    SELECT_ALL_CURRENT_ATTR = """SELECT * EXCLUDE _id FROM customer WHERE _id=%s;"""
+
     #NOT WORKING
     SELECT_NESTED_ARGUMENTS = """SELECT c._id, c.*, c."7a9ec0f97cd6f47b044e72673d493a68" FROM customer FOR ALL SYSTEM_TIME FOR ALL VALID_TIME AS c;"""
 
@@ -37,7 +39,7 @@ class Query():
     def PATCH_MOST_RECENT(attr, value):
         return f"""PATCH INTO customer FOR VALID_TIME FROM %s RECORDS {{_id: %s, "{attr}": {value} }};"""
     
-    def PATCH_SUM(attr, value, current_value=0):
+    def PATCH_SUM(attr, value, current_value):
         new_value = value + current_value
         return f"""PATCH INTO customer FOR VALID_TIME FROM %s RECORDS {{_id: %s, "{attr}": {new_value}}};"""
     

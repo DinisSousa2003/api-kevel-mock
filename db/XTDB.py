@@ -3,6 +3,7 @@ from typing import Optional
 from db.database import Database
 from urllib.parse import urlparse 
 import psycopg as pg
+from psycopg.rows import dict_row
 import json
 from datetime import datetime, timezone
 import re
@@ -27,7 +28,7 @@ class XTDB(Database):
         }
 
         try:
-            self.conn = await pg.AsyncConnection.connect(**DB_PARAMS, autocommit=True)
+            self.conn = await pg.AsyncConnection.connect(**DB_PARAMS, row_factory=dict_row, autocommit=True)
             print("Connected to XTDB database successfully.")
             self.conn.adapters.register_dumper(str, pg.types.string.StrDumperVarchar)
 
@@ -48,37 +49,44 @@ class XTDB(Database):
         timestamp = datetime.fromtimestamp(profile.timestamp/1000, tz=timezone.utc) #ms to seconds
         id = profile.userId
         params = (timestamp, id)
-        current_value = None
+        
+        attributes_to_update = list(profile.attributes.keys())  # Extract attribute names
 
-        for (attr, value) in profile.attributes.items():
-            rule = self.rules.get_rule_by_atrr(attr)
+        if not attributes_to_update:
+            return profile
+        
+        current_values = {}
+        async with self.conn.cursor() as cur:
+            query = Query.SELECT_ALL_CURRENT_ATTR  # Query only relevant attributes
+            await cur.execute(query, (id, ))
+            row = await cur.fetchone()
+            if row:
+                current_values = row
 
-            #TODO: UPDATE ALL OF THE SAME RULE AT THE SAME TIME
 
-            print(attr, value, rule)
+        async with self.conn.transaction():
+            for (attr, value) in profile.attributes.items():
+                rule = self.rules.get_rule_by_atrr(attr)
 
-            #TODO: FOR NOW, ASSUME UPDATES COME IN ORDER
+                #TODO: UPDATE ALL OF THE SAME RULE AT THE SAME TIME
 
-            if rule == "most-recent":
-                query = Query.PATCH_MOST_RECENT(attr, value)
-                async with self.conn.cursor() as cur:
-                    await cur.execute(query, params)
-                
-            elif rule == "sum":
-                current_value = 0
-                query = Query.SELECT_ATTR_TIME(attr)
-                async with self.conn.cursor() as cur:
-                    await cur.execute(query, params)
-                    row = await cur.fetchone()
-                    if row and row[0]:
-                        print("value exists: ", row)
-                        current_value = row[0]
+                print(attr, value, rule)
 
-                query = Query.PATCH_SUM(attr, value, current_value)
-                async with self.conn.cursor() as cur:
-                    await cur.execute(query, params)
+                #TODO: FOR NOW, ASSUME UPDATES COME IN ORDER
 
-           
+                if rule == "most-recent":
+                    query = Query.PATCH_MOST_RECENT(attr, value)
+                    async with self.conn.cursor() as cur:
+                        await cur.execute(query, params)
+                    
+                elif rule == "sum":
+                    print(current_values, attr)
+                    current_value = current_values.get(attr, 0)
+                    if current_value is None:
+                        current_value = 0
+                    query = Query.PATCH_SUM(attr, value, current_value)
+                    async with self.conn.cursor() as cur:
+                        await cur.execute(query, params)
 
         return profile
         
@@ -134,9 +142,9 @@ class XTDB(Database):
         if self.conn is None:
             raise Exception("Database connection not established")
 
-        query = Query.SELECT_ALL_CURRENT
+        #query = Query.SELECT_ALL_CURRENT
         
-        #query = Query.SELECT_ALL_WITH_TIMES
+        query = Query.SELECT_ALL_WITH_TIMES
 
         #query = SELECT_NESTED_ARGUMENTS
 
