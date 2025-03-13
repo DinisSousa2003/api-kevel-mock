@@ -51,7 +51,7 @@ async def populate_from_file(n: int):
                         #print("ok")
 
                         num += 1
-                        if num % 1000:
+                        if num % 1000 == 0:
                              print(num)
 
     return {"message": f"Performed {num} updates to user profiles"}

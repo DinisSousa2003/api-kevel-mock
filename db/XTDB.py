@@ -57,37 +57,31 @@ class XTDB(Database):
         
         current_values = {}
         async with self.conn.cursor() as cur:
-            query = Query.SELECT_ALL_CURRENT_ATTR  # Query only relevant attributes
+            # TODO: QUERY ONLY RELEVANT / PRESENT ATTRIBUTES
+            query = Query.SELECT_ALL_CURRENT_ATTR  
             await cur.execute(query, (id, ))
             row = await cur.fetchone()
             if row:
                 current_values = row
 
+        new_attributes = {}
+        for (attr, value) in profile.attributes.items():
+            rule = self.rules.get_rule_by_atrr(attr)
 
-        async with self.conn.transaction():
-            for (attr, value) in profile.attributes.items():
-                rule = self.rules.get_rule_by_atrr(attr)
+            #print(attr, value, rule)
 
-                #TODO: UPDATE ALL OF THE SAME RULE AT THE SAME TIME
+            #TODO: FOR NOW, ASSUME UPDATES COME IN ORDER
 
-                print(attr, value, rule)
-
-                #TODO: FOR NOW, ASSUME UPDATES COME IN ORDER
-
-                if rule == "most-recent":
-                    query = Query.PATCH_MOST_RECENT(attr, value)
-                    async with self.conn.cursor() as cur:
-                        await cur.execute(query, params)
-                    
-                elif rule == "sum":
-                    print(current_values, attr)
-                    current_value = current_values.get(attr, 0)
-                    if current_value is None:
-                        current_value = 0
-                    query = Query.PATCH_SUM(attr, value, current_value)
-                    async with self.conn.cursor() as cur:
-                        await cur.execute(query, params)
-
+            if rule == "most-recent":
+                new_attributes[attr] = value
+                
+            elif rule == "sum":
+                new_attributes[attr] = (current_values.get(attr) or 0) + value
+                  
+        query = Query.PATCH_WITH_TIME(new_attributes)
+        async with self.conn.cursor() as cur:
+            await cur.execute(query, params)
+        
         return profile
         
 
@@ -142,9 +136,9 @@ class XTDB(Database):
         if self.conn is None:
             raise Exception("Database connection not established")
 
-        #query = Query.SELECT_ALL_CURRENT
+        query = Query.SELECT_ALL_CURRENT
         
-        query = Query.SELECT_ALL_WITH_TIMES
+        #query = Query.SELECT_ALL_WITH_TIMES
 
         #query = SELECT_NESTED_ARGUMENTS
 

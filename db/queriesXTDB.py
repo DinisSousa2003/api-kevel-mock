@@ -34,7 +34,7 @@ class Query():
              WHERE _id = %s;"""
 
     def PATCH_WITH_TIME(attributes):
-        return f"""PATCH INTO customer FOR VALID_TIME FROM %s RECORDS {{_id: %s, {json.dumps(attributes)}}};"""
+        return f"""PATCH INTO customer FOR VALID_TIME FROM %s RECORDS {{_id: %s, {json.dumps(attributes)[1:-1]}}};"""
 
     def PATCH_MOST_RECENT(attr, value):
         return f"""PATCH INTO customer FOR VALID_TIME FROM %s RECORDS {{_id: %s, "{attr}": {value} }};"""
