@@ -6,7 +6,7 @@ import psycopg as pg
 import json
 from datetime import datetime, timezone
 import re
-from rules import RULES
+from rules import Rules
 from db.queriesXTDB import Query
 
 class XTDB(Database):
@@ -14,6 +14,7 @@ class XTDB(Database):
     def __init__(self, db_url):
         self.db_url = db_url
         self.conn = None  # Will hold the connection
+        self.rules = Rules()
 
     async def connect(self):
         parsed_url = urlparse(self.db_url) 
@@ -33,7 +34,58 @@ class XTDB(Database):
         except Exception as error:
             print(f"Error occurred: {error}")
 
+    async def erase_all(self):
+        query = Query.ERASE_ALL
+        async with self.conn.cursor() as cur:
+            await cur.execute(query)
+
+
     async def update_user(self, profile: UserProfile):
+
+        if self.conn is None:
+            raise Exception("Database connection not established")
+
+        timestamp = datetime.fromtimestamp(profile.timestamp/1000, tz=timezone.utc) #ms to seconds
+        id = profile.userId
+        params = (timestamp, id)
+        current_value = None
+
+        for (attr, value) in profile.attributes.items():
+            rule = self.rules.get_rule_by_atrr(attr)
+
+            #TODO: UPDATE ALL OF THE SAME RULE AT THE SAME TIME
+
+            print(attr, value, rule)
+
+            #TODO: FOR NOW, ASSUME UPDATES COME IN ORDER
+
+            if rule == "most-recent":
+                query = Query.PATCH_MOST_RECENT(attr, value)
+                async with self.conn.cursor() as cur:
+                    await cur.execute(query, params)
+                
+            elif rule == "sum":
+                current_value = 0
+                query = Query.SELECT_ATTR_TIME(attr)
+                async with self.conn.cursor() as cur:
+                    await cur.execute(query, params)
+                    row = await cur.fetchone()
+                    if row and row[0]:
+                        print("value exists: ", row)
+                        current_value = row[0]
+
+                query = Query.PATCH_SUM(attr, value, current_value)
+                async with self.conn.cursor() as cur:
+                    await cur.execute(query, params)
+
+           
+
+        return profile
+        
+
+
+    async def update_user_all(self, profile: UserProfile):
+        """Adds all information, from the current valid time (until indefinetely). Conserves attributes if they don't exist"""
 
         if self.conn is None:
             raise Exception("Database connection not established")
@@ -42,12 +94,7 @@ class XTDB(Database):
 
         params = (timestamp, profile.userId)
 
-        # query = Query.SELECT_USER_BT_VT_AND_NOW
-
-        # async with self.conn.cursor() as cur:
-        #     await cur.execute(query, params)
-        #     rows = await cur.fetchall()
-        #     print(rows)
+        print({json.dumps(profile.attributes)})
 
         query = Query.PATCH_WITH_TIME(profile.attributes)
 
@@ -64,7 +111,6 @@ class XTDB(Database):
             raise Exception("Database connection not established")
 
         query = Query.SELECT_USER
-        #query = """SELECT c.*, _valid_from, _valid_to FROM customer AS c WHERE _id = %s"""
 
         params = (userId,)
 
@@ -90,9 +136,8 @@ class XTDB(Database):
 
         query = Query.SELECT_ALL_CURRENT
         
-        query = Query.SELECT_ALL_WITH_TIMES
+        #query = Query.SELECT_ALL_WITH_TIMES
 
-        #WHY IS THIS NOT WORKING????
         #query = SELECT_NESTED_ARGUMENTS
 
         async with self.conn.cursor() as cur:

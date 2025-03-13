@@ -40,7 +40,9 @@ async def populate_from_file(n: int):
     num = 0
     for i in range(0, n+1):
         print("Reading file", i)
-        with open(f'dataset/updates-{i}.jsonl', "r") as updates:
+
+        #with open(f'dataset/updates-{i}.jsonl', "r") as updates:
+        with open(f'dataset/small-test.jsonl', "r") as updates:
                 for line in updates:
                         payload = json.loads(line.strip())  # Convert JSON string to dictionary
                         profile = UserProfile(**payload)
@@ -49,8 +51,17 @@ async def populate_from_file(n: int):
                         #print("ok")
 
                         num += 1
+                        if num % 1000:
+                             print(num)
 
-    return {"message": f"Updated {updates} user profiles"}
+    return {"message": f"Performed {num} updates to user profiles"}
+
+@app.delete("/users")
+async def delete_all():
+     """Delete all data from customer table"""
+
+     await db.erase_all()
+     return {"message": "All customers deleted successfully"}
 
 @app.patch("/users")
 async def update_user(profile: UserProfile):
