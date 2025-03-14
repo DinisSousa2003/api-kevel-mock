@@ -62,9 +62,9 @@ class XTDB(Database):
             await cur.execute(query, (id, ))
             row = await cur.fetchone()
             if row:
-                current_values = row
+                current_values = row['attributes']
 
-        new_attributes = {}
+        new_attributes = current_values
         for (attr, value) in profile.attributes.items():
             rule = self.rules.get_rule_by_atrr(attr)
 
@@ -138,9 +138,9 @@ class XTDB(Database):
 
         query = Query.SELECT_ALL_CURRENT
         
-        #query = Query.SELECT_ALL_WITH_TIMES
+        query = Query.SELECT_ALL_WITH_TIMES
 
-        #query = SELECT_NESTED_ARGUMENTS
+        query = Query.SELECT_NESTED_ARGUMENTS
 
         async with self.conn.cursor() as cur:
             await cur.execute(query)

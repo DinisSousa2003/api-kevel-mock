@@ -18,28 +18,27 @@ class Query():
 
     SELECT_ALL_CURRENT_ATTR = """SELECT * EXCLUDE _id FROM customer WHERE _id=%s;"""
 
-    #NOT WORKING
-    SELECT_NESTED_ARGUMENTS = """SELECT c._id, c.*, c."7a9ec0f97cd6f47b044e72673d493a68" FROM customer FOR ALL SYSTEM_TIME FOR ALL VALID_TIME AS c;"""
+    SELECT_NESTED_ARGUMENTS = """SELECT c._id, (c.attributes)."7a9ec0f97cd6f47b044e72673d493a68" FROM customer FOR ALL SYSTEM_TIME FOR ALL VALID_TIME AS c;"""
 
     SELECT_ALL_WITH_TIMES = """SELECT c.*, _valid_from, _valid_to, _system_from, _system_to FROM customer FOR ALL SYSTEM_TIME FOR ALL VALID_TIME AS c;"""
 
     ERASE_ALL = """ERASE FROM customer;"""
 
     def SELECT_ATTR(attr, id):
-        return f"""SELECT c."{attr}" FROM customer AS c WHERE _id = {id};"""
+        return f"""SELECT (c.attributes)."{attr}" FROM customer AS c WHERE _id = {id};"""
     
     def SELECT_ATTR_TIME(attr):
-        return f"""SELECT c."{attr}" FROM customer
+        return f"""SELECT (c.attributes)."{attr}" FROM customer
              FOR VALID_TIME AS OF %s AS c 
              WHERE _id = %s;"""
 
     def PATCH_WITH_TIME(attributes):
-        return f"""PATCH INTO customer FOR VALID_TIME FROM %s RECORDS {{_id: %s, {json.dumps(attributes)[1:-1]}}};"""
+        return f"""PATCH INTO customer FOR VALID_TIME FROM %s RECORDS {{_id: %s, attributes: {json.dumps(attributes)}}};"""
 
-    def PATCH_MOST_RECENT(attr, value):
-        return f"""PATCH INTO customer FOR VALID_TIME FROM %s RECORDS {{_id: %s, "{attr}": {value} }};"""
+    # def PATCH_MOST_RECENT(attr, value):
+    #     return f"""PATCH INTO customer FOR VALID_TIME FROM %s RECORDS {{_id: %s, "{attr}": {value} }};"""
     
-    def PATCH_SUM(attr, value, current_value):
-        new_value = value + current_value
-        return f"""PATCH INTO customer FOR VALID_TIME FROM %s RECORDS {{_id: %s, "{attr}": {new_value}}};"""
+    # def PATCH_SUM(attr, value, current_value):
+    #     new_value = value + current_value
+    #     return f"""PATCH INTO customer FOR VALID_TIME FROM %s RECORDS {{_id: %s, "{attr}": {new_value}}};"""
     
