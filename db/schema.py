@@ -4,7 +4,7 @@ from datetime import datetime
 
 class Attributes(DocumentTemplate):
     _subdocument = []  # Mark as a subdocument
-    attributes: dict
+    attributes: dict  # Use `dict` instead of `Dict[str, int]`
 
 class Customer(DocumentTemplate):
     id: str

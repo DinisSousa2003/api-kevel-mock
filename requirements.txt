@@ -3,5 +3,6 @@ uvicorn
 pydantic
 python-dotenv
 psycopg[binary]
+click
 terminus
 terminusdb-client

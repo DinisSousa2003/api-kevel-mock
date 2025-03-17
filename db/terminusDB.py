@@ -44,7 +44,7 @@ class terminusDB(Database):
             profile.timestamp = int(time.time())
 
         # Convert Pydantic model to a WOQLSchema document
-        # doc = self.schema.import_objects(**profile.model_dump())  #Uncomment if schema is added
+        doc = self.schema.import_objects(**profile.model_dump())  #Uncomment if schema is added
 
         # Insert into TerminusDB
         doc = profile.model_dump(exclude="userId")

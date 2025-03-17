@@ -49,6 +49,7 @@ class XTDB(Database):
         timestamp = datetime.fromtimestamp(profile.timestamp/1000, tz=timezone.utc) #ms to seconds
         id = profile.userId
         params = (timestamp, id)
+        params2 = (id, timestamp)
         
         attributes_to_update = list(profile.attributes.keys())  # Extract attribute names
 
@@ -78,9 +79,9 @@ class XTDB(Database):
             elif rule == "sum":
                 new_attributes[attr] = (current_values.get(attr) or 0) + value
                   
-        query = Query.PATCH_WITH_TIME(new_attributes)
+        query = Query.INSERT_WITH_TIME(new_attributes)
         async with self.conn.cursor() as cur:
-            await cur.execute(query, params)
+            await cur.execute(query, params2)
         
         return profile
         
@@ -140,7 +141,7 @@ class XTDB(Database):
         
         query = Query.SELECT_ALL_WITH_TIMES
 
-        query = Query.SELECT_NESTED_ARGUMENTS
+        #query = Query.SELECT_NESTED_ARGUMENTS
 
         async with self.conn.cursor() as cur:
             await cur.execute(query)
