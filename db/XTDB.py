@@ -47,40 +47,80 @@ class XTDB(Database):
 
         timestamp = datetime.fromtimestamp(profile.timestamp/1000, tz=timezone.utc) #ms to seconds
         id = profile.userId
-        params = (timestamp, id)
-        params2 = (id, timestamp)
+        params = (id, timestamp)
+        params2 = (timestamp, id)
         
         attributes_to_update = list(profile.attributes.keys())  # Extract attribute names
 
         if not attributes_to_update:
             return profile
         
-        current_values = {}
+        #1. Get most recent valid attributes
+        new_attributes = {}
+
         async with self.conn.cursor() as cur:
-            # TODO: QUERY ONLY RELEVANT / PRESENT ATTRIBUTES
-            query = Query.SELECT_ALL_CURRENT_ATTR  
-            await cur.execute(query, (id, ))
+            query = Query.SELECT_ALL_CURRENT_ATTR_VT
+            await cur.execute(query, params2)
             row = await cur.fetchone()
             if row:
-                current_values = row['attributes']
+                print("Current values:", row)
+                new_attributes = row['attributes']
 
-        new_attributes = current_values
+
+        #2. Update attributes for given time
         for (attr, value) in profile.attributes.items():
             rule = self.rules.get_rule_by_atrr(attr)
-
-            #print(attr, value, rule)
-
-            #TODO: FOR NOW, ASSUME UPDATES COME IN ORDER
 
             if rule == "most-recent":
                 new_attributes[attr] = value
                 
             elif rule == "sum":
-                new_attributes[attr] = (current_values.get(attr) or 0) + value
-                  
-        query = Query.INSERT_WITH_TIME(new_attributes)
+                new_attributes[attr] = (new_attributes.get(attr) or 0) + value
+
+        
+        #3. Get all future states
         async with self.conn.cursor() as cur:
-            await cur.execute(query, params2)
+            query = Query.SELECT_USER_BT_VT_AND_NOW
+            await cur.execute(query, params)
+            futures = await cur.fetchall()
+            print("futures for timestamp", timestamp, ": ", futures)
+
+        #4. Update is not in the past  
+        if not futures:
+            query = Query.INSERT_WITH_TIME(new_attributes)
+            async with self.conn.cursor() as cur:
+                await cur.execute(query, params)
+
+        #4. Update is in the past
+        else:
+            #Update from timestamp to the first _valid_to
+            query = Query.INSERT_WITH_TIME_PERIOD(new_attributes)
+            params3 = params + (futures[0]['_valid_from'], )
+            async with self.conn.cursor() as cur:
+                await cur.execute(query, params3)
+
+        #5. Update all future states
+        for future in futures:
+            for (attr, value) in profile.attributes.items():
+                rule = self.rules.get_rule_by_atrr(attr)
+
+                if rule == "most-recent":
+                    #Value if value does not exist
+                    future['attributes'][attr] = (future['attributes'].get(attr) or value)
+                    
+                if rule == "sum":
+                    #Add value to the attributes
+                    future['attributes'][attr] = (future['attributes'].get(attr) or 0) + value
+
+            if future['_valid_to']:
+                query = Query.INSERT_WITH_TIME_PERIOD(future['attributes'])
+                async with self.conn.cursor() as cur:
+                    await cur.execute(query, (id, future['_valid_from'], future['_valid_to']))
+            else:
+                query = Query.INSERT_WITH_TIME(future['attributes'])
+                async with self.conn.cursor() as cur:
+                    await cur.execute(query, (id, future['_valid_from']))
+        
         
         return profile
         
@@ -137,8 +177,10 @@ class XTDB(Database):
             raise Exception("Database connection not established")
 
         query = Query.SELECT_ALL_CURRENT
+
+        query = Query.SELECT_ALL_VALID_WITH_TIMES
         
-        query = Query.SELECT_ALL_WITH_TIMES
+        #query = Query.SELECT_ALL_WITH_TIMES
 
         #query = Query.SELECT_NESTED_ARGUMENTS
 
