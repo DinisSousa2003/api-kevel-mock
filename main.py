@@ -41,18 +41,19 @@ async def populate_from_file(n: int):
     for i in range(0, n+1):
         print("Reading file", i)
 
-        #with open(f'dataset/updates-{i}.jsonl', "r") as updates:
-        with open(f'dataset/small-test.jsonl', "r") as updates:
+        with open(f'dataset/updates-{i}.jsonl', "r") as updates:
+        #with open(f'dataset/small-test.jsonl', "r") as updates:
                 for line in updates:
                         payload = json.loads(line.strip())  # Convert JSON string to dictionary
                         profile = UserProfile(**payload)
 
                         profile = await db.update_user(profile)
-                        #print("ok")
 
                         num += 1
                         if num % 1000 == 0:
-                             print(num)
+                            print(num)
+                        if num % 10000 == 0:
+                            return {"message": "Done multiple updates"}
 
     return {"message": f"Performed {num} updates to user profiles"}
 

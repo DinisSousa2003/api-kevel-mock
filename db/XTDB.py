@@ -27,7 +27,7 @@ class XTDB(Database):
         }
 
         try:
-            self.conn = await pg.AsyncConnection.connect(**DB_PARAMS, row_factory=dict_row, autocommit=True)
+            self.conn = await pg.AsyncConnection.connect(**DB_PARAMS, row_factory=dict_row, autocommit=True, prepare_threshold=0)
             print("Connected to XTDB database successfully.")
             self.conn.adapters.register_dumper(str, pg.types.string.StrDumperVarchar)
 
@@ -60,10 +60,9 @@ class XTDB(Database):
 
         async with self.conn.cursor() as cur:
             query = Query.SELECT_ALL_CURRENT_ATTR_VT
-            await cur.execute(query, params2)
+            await cur.execute(query, params2, prepare=False)
             row = await cur.fetchone()
             if row:
-                print("Current values:", row)
                 new_attributes = row['attributes']
 
 
@@ -71,25 +70,37 @@ class XTDB(Database):
         for (attr, value) in profile.attributes.items():
             rule = self.rules.get_rule_by_atrr(attr)
 
+            #More recent than past
             if rule == "most-recent":
                 new_attributes[attr] = value
+
+            #If exists, is older, else update
+            elif rule == "older":
+                new_attributes[attr] = new_attributes.get(attr, value)
                 
+            #Get value and sum
             elif rule == "sum":
-                new_attributes[attr] = (new_attributes.get(attr) or 0) + value
+                new_attributes[attr] = new_attributes.get(attr, 0) + value
+
+            #Update if value > current
+            elif rule == "max":
+                new_attributes[attr] = max(new_attributes.get(attr, 0), value)
+
+            elif rule == "or":
+                new_attributes[attr] = new_attributes.get(attr, False) or value
 
         
         #3. Get all future states
         async with self.conn.cursor() as cur:
             query = Query.SELECT_USER_BT_VT_AND_NOW
-            await cur.execute(query, params)
+            await cur.execute(query, params, prepare=False)
             futures = await cur.fetchall()
-            print("futures for timestamp", timestamp, ": ", futures)
 
         #4. Update is not in the past  
         if not futures:
             query = Query.INSERT_WITH_TIME(new_attributes)
             async with self.conn.cursor() as cur:
-                await cur.execute(query, params)
+                await cur.execute(query, params, prepare=False)
 
         #4. Update is in the past
         else:
@@ -97,29 +108,40 @@ class XTDB(Database):
             query = Query.INSERT_WITH_TIME_PERIOD(new_attributes)
             params3 = params + (futures[0]['_valid_from'], )
             async with self.conn.cursor() as cur:
-                await cur.execute(query, params3)
+                await cur.execute(query, params3, prepare=False)
 
         #5. Update all future states
         for future in futures:
             for (attr, value) in profile.attributes.items():
                 rule = self.rules.get_rule_by_atrr(attr)
 
+                #Value if value does not exist (future is more recent)
                 if rule == "most-recent":
-                    #Value if value does not exist
-                    future['attributes'][attr] = (future['attributes'].get(attr) or value)
+                    future['attributes'][attr] = future['attributes'].get(attr, value)
+                
+                #Value is older than future
+                elif rule == "older":
+                    future['attributes'][attr] = value
                     
-                if rule == "sum":
-                    #Add value to the attributes
-                    future['attributes'][attr] = (future['attributes'].get(attr) or 0) + value
+                #Add value to the attributes
+                elif rule == "sum":
+                    future['attributes'][attr] = (future['attributes'].get(attr, 0)) + value
+
+                #Update if value > current
+                elif rule == "max":
+                    new_attributes[attr] = max(new_attributes.get(attr, None), value)
+
+                elif rule == "or":
+                    new_attributes[attr] = new_attributes[attr] or value
 
             if future['_valid_to']:
                 query = Query.INSERT_WITH_TIME_PERIOD(future['attributes'])
                 async with self.conn.cursor() as cur:
-                    await cur.execute(query, (id, future['_valid_from'], future['_valid_to']))
+                    await cur.execute(query, (id, future['_valid_from'], future['_valid_to']), prepare=False)
             else:
                 query = Query.INSERT_WITH_TIME(future['attributes'])
                 async with self.conn.cursor() as cur:
-                    await cur.execute(query, (id, future['_valid_from']))
+                    await cur.execute(query, (id, future['_valid_from']), prepare=False)
         
         
         return profile
@@ -168,7 +190,7 @@ class XTDB(Database):
             await cur.execute(query, params)
             row = await cur.fetchone()
             if row:
-                return UserProfile(userId=row[0], attributes=row[1], timestamp=int(row[2].timestamp()))
+                return UserProfile(userId=row['_id'], attributes=row['attributes'], timestamp=int(row['_valid_from'].timestamp()))
             return None
         
     async def get_all_documents(self):
