@@ -6,7 +6,6 @@ import psycopg as pg
 from psycopg.rows import dict_row
 import json
 from datetime import datetime, timezone
-import re
 from rules import Rules
 from db.queriesXTDB import Query
 

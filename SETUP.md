@@ -50,3 +50,11 @@ curl -X GET "http://127.0.0.1:8000/users/4321?timestamp=1710000000"
 ```
 
 ## Get all changes to the database
+
+
+## If the server does not die
+
+```bash
+sudo lsof -i :8000 #To get the PID of the uvicron process
+sudo kill -9 <PID>
+```
