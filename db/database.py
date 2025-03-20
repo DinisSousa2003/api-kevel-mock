@@ -4,9 +4,5 @@ from typing import Optional, Dict
 
 class Database(ABC):
     @abstractmethod
-    async def update_user(self, user: UserProfile) -> None:
-        pass
-
-    @abstractmethod
-    async def get_user(self, userId: str, timestamp: Optional[int] = None) -> Optional[UserProfile]:
+    async def connect(self) -> None:
         pass

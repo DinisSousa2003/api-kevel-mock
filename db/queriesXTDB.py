@@ -1,6 +1,6 @@
 import json
 
-class Query():
+class QueryState():
 
     SELECT_USER = """SELECT c.*, _valid_from, _valid_to 
                         FROM customer AS c 
@@ -55,3 +55,17 @@ class Query():
     #     new_value = value + current_value
     #     return f"""PATCH INTO customer FOR VALID_TIME FROM %s RECORDS {{_id: %s, "{attr}": {new_value}}};"""
     
+class QueryDiff():
+    
+    def INSERT_UPDATE(attributes):
+        return f"""INSERT INTO customer RECORDS {{_id: %s, userId: %s, attributes: {json.dumps(attributes)}, _valid_from: %s}}"""
+    
+    SELECT_DIFF_UP_TO_VT = """SELECT attributes, _valid_from FROM customer
+                    FOR ALL VALID_TIME
+                    WHERE userId = %s AND _valid_from <= %s
+                    ORDER BY _valid_from;"""
+    
+    SELECT_DIFF = """SELECT attributes, _valid_from FROM customer
+                    FOR ALL VALID_TIME
+                    WHERE userId = %s
+                    ORDER BY _valid_from;"""

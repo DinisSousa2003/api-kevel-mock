@@ -3,6 +3,10 @@
 # `nightly`: built every night from `main` branch
 # `edge`: latest nightly plus urgent fixes
 
+# https://github.com/xtdb/xtdb/pkgs/container/xtdb/374319005?tag=2.0.0-beta6.1
+
+# To delete state: sudo rm -rf /tmp/xtdb-data-dir
+
 # Add -v to persist states
 # From https://docs.xtdb.com/intro/installation-via-docker.html
 
@@ -11,7 +15,9 @@ docker run -it --name="xtdb-2" --pull=always \
   -p 8080:8080 \
   -p 3000:3000 \
   -v /tmp/xtdb-data-dir:/var/lib/xtdb \
-  ghcr.io/xtdb/xtdb
+  ghcr.io/xtdb/xtdb:2.0.0-beta6.1
+
+# Using this image for now: https://github.com/xtdb/xtdb/pkgs/container/xtdb/374319005?tag=2.0.0-beta6.1
 
 # 5432: Postgres wire-compatible server (primary API)
 # 8080: Monitoring/healthz HTTP endpoints

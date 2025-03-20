@@ -33,7 +33,7 @@ async def startup(app: FastAPI):
 
 app = FastAPI(lifespan=startup)
 
-@app.post("/populate/{n}")
+@app.post("/populate/state/{n}")
 async def populate_from_file(n: int):
     """Update db from reading file data"""
 
@@ -41,13 +41,37 @@ async def populate_from_file(n: int):
     for i in range(0, n+1):
         print("Reading file", i)
 
-        with open(f'dataset/updates-{i}.jsonl', "r") as updates:
-        #with open(f'dataset/small-test.jsonl', "r") as updates:
+        #with open(f'dataset/updates-{i}.jsonl', "r") as updates:
+        with open(f'dataset/small-test.jsonl', "r") as updates:
                 for line in updates:
                         payload = json.loads(line.strip())  # Convert JSON string to dictionary
                         profile = UserProfile(**payload)
 
-                        profile = await db.update_user(profile)
+                        profile = await db.update_user_state(profile)
+
+                        num += 1
+                        if num % 1000 == 0:
+                            print(num)
+                        if num % 10000 == 0:
+                            return {"message": "Done multiple updates"}
+
+    return {"message": f"Performed {num} updates to user profiles"}
+
+@app.post("/populate/diff/{n}")
+async def populate_from_file(n: int):
+    """Update db from reading file data"""
+
+    num = 0
+    for i in range(0, n+1):
+        print("Reading file", i)
+
+        #with open(f'dataset/updates-{i}.jsonl', "r") as updates:
+        with open(f'dataset/small-test.jsonl', "r") as updates:
+                for line in updates:
+                        payload = json.loads(line.strip())  # Convert JSON string to dictionary
+                        profile = UserProfile(**payload)
+
+                        profile = await db.update_user_diff(profile)
 
                         num += 1
                         if num % 1000 == 0:
@@ -64,30 +88,57 @@ async def delete_all():
      await db.erase_all()
      return {"message": "All customers deleted successfully"}
 
-@app.patch("/users")
+@app.patch("/users/state")
 async def update_user(profile: UserProfile):
     """Update or insert a user profile."""
 
-    profile = await db.update_user(profile)
+    profile = await db.update_user_state(profile)
     return {"message": "Profile updated successfully!", "userId": profile.userId, "timestamp": datetime.fromtimestamp(profile.timestamp/1000).strftime('%Y-%m-%d %H:%M:%S')}
 
-@app.get("/users/all")
+@app.patch("/users/diff")
+async def update_user(profile: UserProfile):
+    """Update or insert a user profile."""
+
+    profile = await db.update_user_diff(profile)
+    return {"message": "Profile updated successfully!", "userId": profile.userId, "timestamp": datetime.fromtimestamp(profile.timestamp/1000).strftime('%Y-%m-%d %H:%M:%S')}
+
+@app.get("/users/state/all")
 async def get_all_users():
     """Retrieve the latest or specific version of a user profile."""
 
     #await db.get_all_triples() #debug for terminus
     
-    docs = await db.get_all_documents()
+    docs = await db.get_all_users_state()
+    
+    if not docs:
+        raise HTTPException(status_code=404, detail="No user found")
+    return docs
+
+@app.get("/users/diff/all")
+async def get_all_users():
+    """Retrieve the latest or specific version of a user profile."""
+
+    #await db.get_all_triples() #debug for terminus
+    
+    docs = await db.get_all_users_diff()
     
     if not docs:
         raise HTTPException(status_code=404, detail="No user found")
     return docs
 
 
-@app.get("/users/{userId}", response_model=UserProfile)
+@app.get("/users/state/{userId}", response_model=UserProfile)
 async def get_user(userId: str, timestamp: Optional[int] = None):
     """Retrieve the latest or specific version of a user profile."""
-    profile = await db.get_user(userId, timestamp)
+    profile = await db.get_user_state(userId, timestamp)
+    if not profile:
+        raise HTTPException(status_code=404, detail="No user found")
+    return profile
+
+@app.get("/users/diff/{userId}", response_model=UserProfile)
+async def get_user(userId: str, timestamp: Optional[int] = None):
+    """Retrieve the latest or specific version of a user profile."""
+    profile = await db.get_user_diff(userId, timestamp)
     if not profile:
         raise HTTPException(status_code=404, detail="No user found")
     return profile
