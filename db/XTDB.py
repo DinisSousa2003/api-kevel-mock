@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from rules import Rules
 from db.queriesXTDB import QueryState, QueryDiff
 import uuid
+from collections import defaultdict
 
 class XTDB(Database):
 
@@ -273,6 +274,26 @@ class XTDB(Database):
         if self.conn is None:
             raise Exception("Database connection not established")
 
-        #1. SELECT ALL USER IDS
+        #1. Select all diffs for all the users
+        #query = QueryDiff.SELECT_ALL_DIFFS
+        query = QueryDiff.SELECT_ALL_USERS
 
-        #2. PERFORM THE GET USER DIFF FOR ALL THE USERS
+        #TODO: THIS IS IN THE FORMAT [{userId: idOne}, {userId: idTwo}, ....]
+
+        async with self.conn.cursor(row_factory=None) as cur:
+            await cur.execute(query, prepare=False)
+            results = await cur.fetchall()
+
+        print(results)
+
+        """
+        # 2. Group diffs by userId
+        user_diffs = defaultdict(list)
+        for diff in results: 
+            user_diffs[diff["userId"]].append(diff)
+
+        #3. Perform the get_user_diff for each user
+        user_profiles = {}
+
+        for userId, user_diffs_list in user_diffs:"
+        """

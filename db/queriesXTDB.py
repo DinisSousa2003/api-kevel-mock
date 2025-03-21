@@ -60,12 +60,19 @@ class QueryDiff():
     def INSERT_UPDATE(attributes):
         return f"""INSERT INTO customer RECORDS {{_id: %s, userId: %s, attributes: {json.dumps(attributes)}, _valid_from: %s}}"""
     
-    SELECT_DIFF_UP_TO_VT = """SELECT attributes, _valid_from FROM customer
+    SELECT_DIFFS_USER_UP_TO_VT = """SELECT attributes, _valid_from FROM customer
                     FOR ALL VALID_TIME
                     WHERE userId = %s AND _valid_from <= %s
                     ORDER BY _valid_from;"""
     
-    SELECT_DIFF = """SELECT attributes, _valid_from FROM customer
+    SELECT_DIFFS_USER = """SELECT attributes, _valid_from FROM customer
                     FOR ALL VALID_TIME
                     WHERE userId = %s
                     ORDER BY _valid_from;"""
+    
+    SELECT_ALL_USERS = """SELECT DISTINCT userId
+                        FROM customer"""
+    
+    SELECT_ALL_DIFFS = """SELECT userId, attributes, _valid_from
+                        FROM customer
+                        ORDER BY userId, _valid_from;"""
