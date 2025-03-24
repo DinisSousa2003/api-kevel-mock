@@ -12,6 +12,9 @@ class Rules:
     
     def get_all_rules(self) -> Dict[str, str]:
         return self._rules
+
+    def get_all_rules_name(self) -> List[str]:
+        return self._rules.keys()
     
     def get_rules_by_type(self, rule_types: Optional[tuple] = ()) -> Dict[str, str]:
         if not rule_types:

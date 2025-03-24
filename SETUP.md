@@ -8,8 +8,9 @@ db - database layer
 
 Run the following command:
 
+Python version 3.10.8
 ```bash
-pip install -r requirements.txt 
+python3 -m pip install -r requirements.txt 
 ```
 
 ## Start the API

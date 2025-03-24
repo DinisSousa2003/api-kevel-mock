@@ -7,7 +7,7 @@ from rules import Rules
 from terminusdb_client import Client
 from terminusdb_client import WOQLQuery as wq
 import pprint as pp
-from db.schema import Attributes
+from db.schema_maker_terminus import MySchema
 
 class terminusDB(Database):
 
@@ -15,6 +15,7 @@ class terminusDB(Database):
         self.db_url = db_url
         self.client = None
         self.rules = Rules()
+        self.schema = None
 
     async def connect(self):
         parsed_url = urlparse(self.db_url) 
@@ -25,12 +26,18 @@ class terminusDB(Database):
             "dbname": parsed_url.path.lstrip("/"),  # Extracts database name
         }
 
-        print(f"Connecting to: {DB_PARAMS['scheme']}://{DB_PARAMS['client']}")
+        print(f"Connecting to: {DB_PARAMS['scheme']}://{DB_PARAMS['client']}", f"{DB_PARAMS['dbname']}")
+
+        self.schema = MySchema(rules=self.rules.get_all_rules_name())
+        #print(self.schema.get_schema())  
 
         try:
             self.client = Client(DB_PARAMS["scheme"] + "://" + DB_PARAMS["client"])
-            self.client.connect(db=DB_PARAMS["dbname"])
+            self.client.connect(key="root", team="admin", user="admin", db=DB_PARAMS["dbname"])
             print("Connected successfully.")
+
+            self.schema.post_schema()
+
         except Exception as error:
             print(f"Error occurred: {error}")
 

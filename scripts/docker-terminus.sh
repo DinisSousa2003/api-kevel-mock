@@ -26,17 +26,15 @@ sleep 10
 } | tdbpy startproject
 
 # Ensure schema.py is present before proceeding
-if [ -f "../scripts/schema.py" ]; then
-  cp ../scripts/schema.py schema.py
+if [ -f "../scripts/old_schema.py" ]; then
+  cp ../scripts/old_schema.py schema.py
   echo "Schema copied successfully."
 else
   echo "Warning: schema.py not found!"
 fi
 
-cp ../scripts/schema.py schema.py #Uncomment when schema is done
+tdbpy commit -m"Schema (mock schema just to start project)"
 
-#rm schema.py #Comment when schema is done. Check if we can startt without schema
-
-tdbpy commit -m"Schema"
+rm schema.py #Remove mock schema 
 
 echo "Setup complete!"
