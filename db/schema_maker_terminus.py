@@ -13,6 +13,10 @@ from requests.auth import HTTPBasicAuth
 class MySchema:
     schema = {}
 
+    """Schema is the schema for the database.
+    If we are using state based, id is user id
+    If we are using op-based, id is random and we use user id to get all user updates"""
+
     def __init__(self, rules): 
         self.schema = {
             "author": "admin",
@@ -43,9 +47,9 @@ class MySchema:
                     {
                         "@id": "Customer",
                         "@type": "Class",
-                        "userId": "xsd:string",
+                        "userId": { "@type" : "Optional", "@class" : "xsd:string" },
                         "attributes": "Attributes",
-                        "_valid_from": "xsd:dateTime"
+                        "at": "xsd:dateTime"
                     }
                 }
             ]
@@ -55,8 +59,11 @@ class MySchema:
         #print(self.schema)
 
         #TODO: FOR DIFFERENT TYPES OF RULES MIGHT HAVE TO HAVE A DIFFERENT TYPE
-        for rule in rules:
-            self.schema["operations"][1]["class_document"][rule] = "xsd:integer"
+        for (name, rule) in rules.items():
+            if rule == "or":
+                self.schema["operations"][1]["class_document"][name] = { "@type" : "Optional", "@class" : "xsd:boolean" }
+            else:
+                self.schema["operations"][1]["class_document"][name] = { "@type" : "Optional", "@class" : "xsd:double" }
 
     def get_schema(self):
         return self.schema

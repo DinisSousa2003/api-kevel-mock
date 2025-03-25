@@ -6,7 +6,7 @@ import psycopg as pg
 from psycopg.rows import dict_row
 from datetime import datetime, timezone
 from rules import Rules
-from db.queriesXTDB import QueryState, QueryDiff
+from db.queries.queriesXTDB import QueryState, QueryDiff
 import uuid
 from collections import defaultdict
 
@@ -53,12 +53,12 @@ class XTDB(Database):
 
         dt = datetime.fromtimestamp(profile.timestamp/1000, tz=timezone.utc) #ms to seconds
         id = profile.userId
+        attributes = profile.attributes
         params = (id, dt)
         params2 = (dt, id)
-        
-        attributes_to_update = list(profile.attributes.keys())  # Extract attribute names
 
-        if not attributes_to_update:
+
+        if not attributes:
             return profile
         
         #1. Get most recent valid attributes
@@ -93,7 +93,7 @@ class XTDB(Database):
                 new_attributes[attr] = max(new_attributes.get(attr, float('-inf')), value)
 
             elif rule == "or":
-                new_attributes[attr] = new_attributes.get(attr, False) or value
+                new_attributes[attr] = value or new_attributes.get(attr, False)
 
         
         #3. Get all future states
@@ -163,7 +163,7 @@ class XTDB(Database):
 
         params = (userId,)
 
-        if timestamp is not None: 
+        if timestamp: 
             
             query = QueryState.SELECT_USER_WITH_VT
             
@@ -205,14 +205,14 @@ class XTDB(Database):
         if self.conn is None:
             raise Exception("Database connection not established")
 
-        timestamp = datetime.fromtimestamp(profile.timestamp/1000, tz=timezone.utc) #ms to seconds
+        dt = datetime.fromtimestamp(profile.timestamp/1000, tz=timezone.utc) #ms to seconds
         userId = profile.userId
         id = uuid.uuid4()
 
         query = QueryDiff.INSERT_UPDATE(profile.attributes)
 
         async with self.conn.cursor() as cur:
-                    await cur.execute(query, (id, userId, timestamp), prepare=False)
+                    await cur.execute(query, (id, userId, dt), prepare=False)
         
         return profile
 
@@ -221,14 +221,14 @@ class XTDB(Database):
         if self.conn is None:
             raise Exception("Database connection not established")
 
-        #1. Select all users where userId = userId
+        #1. Select all diffs where userId = userId
 
-        query = QueryDiff.SELECT_DIFF
+        query = QueryDiff.SELECT_DIFFS_USER
         params = (userId,)
 
-        if timestamp is not None: 
+        if timestamp: 
             
-            query = QueryDiff.SELECT_DIFF_UP_TO_VT
+            query = QueryDiff.SELECT_DIFFS_USER_UP_TO_VT
             
             dt = datetime.fromtimestamp(timestamp, tz=timezone.utc) #assuming it is in seconds
             params = (dt, userId)
@@ -263,7 +263,7 @@ class XTDB(Database):
                 elif rule == "or":
                     attributes[attr] = attributes.get(attr, False) or value  # Logical OR
 
-        #3. <Optional> Merge all updates that are older than x / more than y (faster restore next time)
+        #3. <Optional> Merge all updates that are older than x / more than y and cache (faster restore next time)
 
         #4. Return as user profile
         latest_timestamp = diffs[-1]["_valid_from"]  # Last applied timestamp

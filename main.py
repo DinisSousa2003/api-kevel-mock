@@ -41,8 +41,8 @@ async def populate_from_file(n: int):
     for i in range(0, n+1):
         print("Reading file", i)
 
-        #with open(f'dataset/updates-{i}.jsonl', "r") as updates:
-        with open(f'dataset/small-test.jsonl', "r") as updates:
+        with open(f'dataset/updates-{i}.jsonl', "r") as updates:
+        #with open(f'dataset/small-test.jsonl', "r") as updates:
                 for line in updates:
                         payload = json.loads(line.strip())  # Convert JSON string to dictionary
                         profile = UserProfile(**payload)
@@ -50,9 +50,9 @@ async def populate_from_file(n: int):
                         profile = await db.update_user_state(profile)
 
                         num += 1
-                        if num % 1000 == 0:
+                        if num % 10 == 0:
                             print(num)
-                        if num % 10000 == 0:
+                        if num % 100 == 0:
                             return {"message": "Done multiple updates"}
 
     return {"message": f"Performed {num} updates to user profiles"}
@@ -65,8 +65,8 @@ async def populate_from_file(n: int):
     for i in range(0, n+1):
         print("Reading file", i)
 
-        #with open(f'dataset/updates-{i}.jsonl', "r") as updates:
-        with open(f'dataset/small-test.jsonl', "r") as updates:
+        with open(f'dataset/updates-{i}.jsonl', "r") as updates:
+        #with open(f'dataset/small-test.jsonl', "r") as updates:
                 for line in updates:
                         payload = json.loads(line.strip())  # Convert JSON string to dictionary
                         profile = UserProfile(**payload)
@@ -74,9 +74,9 @@ async def populate_from_file(n: int):
                         profile = await db.update_user_diff(profile)
 
                         num += 1
-                        if num % 1000 == 0:
+                        if num % 10 == 0:
                             print(num)
-                        if num % 10000 == 0:
+                        if num % 100 == 0:
                             return {"message": "Done multiple updates"}
 
     return {"message": f"Performed {num} updates to user profiles"}
@@ -106,8 +106,6 @@ async def update_user(profile: UserProfile):
 async def get_all_users():
     """Retrieve the latest or specific version of a user profile."""
 
-    #await db.get_all_triples() #debug for terminus
-    
     docs = await db.get_all_users_state()
     
     if not docs:

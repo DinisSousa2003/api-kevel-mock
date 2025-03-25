@@ -1,9 +1,3 @@
-# FAST API for get and update requests
-
-## Files
-
-db - database layer
-
 ## Requirements
 
 Run the following command:
@@ -13,7 +7,15 @@ Python version 3.10.8
 python3 -m pip install -r requirements.txt 
 ```
 
+## Start the database
+
+Run either of the .sh scripts on the scripts folder
+
 ## Start the API
+
+Crate and change a .env file according to the possibilities presented in the env.md file.
+
+The database to be used will be selected accordingly.
 
 ```bash
  uvicorn main:app --reload
