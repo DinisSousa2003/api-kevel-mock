@@ -49,7 +49,7 @@ class MySchema:
                         "@type": "Class",
                         "userId": { "@type" : "Optional", "@class" : "xsd:string" },
                         "attributes": "Attributes",
-                        "at": "xsd:dateTime"
+                        "at": "xsd:integer"
                     }
                 }
             ]
@@ -60,7 +60,9 @@ class MySchema:
 
         #TODO: FOR DIFFERENT TYPES OF RULES MIGHT HAVE TO HAVE A DIFFERENT TYPE
         for (name, rule) in rules.items():
-            if rule == "or":
+            if "bounded-last-unique-concatenation" in rule:
+                self.schema["operations"][1]["class_document"][name] = { "@type" : "Array", "@class" : "xsd:double" }
+            elif rule == "or":
                 self.schema["operations"][1]["class_document"][name] = { "@type" : "Optional", "@class" : "xsd:boolean" }
             else:
                 self.schema["operations"][1]["class_document"][name] = { "@type" : "Optional", "@class" : "xsd:double" }

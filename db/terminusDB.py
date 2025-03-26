@@ -2,21 +2,34 @@ from models import UserProfile
 from typing import Optional
 from db.database import Database
 from urllib.parse import urlparse 
-from datetime import datetime, timezone
 from rules import Rules
 from terminusdb_client import Client
 from terminusdb_client import WOQLQuery as wq
 import pprint as pp
 from db.schema_maker_terminus import MySchema
 import uuid
+import os
+from dotenv import load_dotenv
+from requests.auth import HTTPBasicAuth
+from db.queries.queriesTerminusDB import TerminusDBAPI
 
 class terminusDB(Database):
 
     def __init__(self, db_url):
+
+        load_dotenv('../.env')
+
         self.db_url = db_url
         self.client = None
         self.rules = Rules()
-        self.schema = None
+        self.schema = MySchema(rules=self.rules.get_all_rules())
+        self.db_name = None
+
+        user = os.getenv("TERMINUS_USER", "admin")
+        key = os.getenv("TERMINUS_KEY", "root")
+        self.auth = HTTPBasicAuth(user, key)
+
+        self.API = None
 
     async def connect(self):
         parsed_url = urlparse(self.db_url) 
@@ -29,18 +42,24 @@ class terminusDB(Database):
 
         print(f"Connecting to: {DB_PARAMS['scheme']}://{DB_PARAMS['client']}", f"{DB_PARAMS['dbname']}")
 
-        self.schema = MySchema(rules=self.rules.get_all_rules())
+        self.db_name = DB_PARAMS['dbname']
+
+        self.API = TerminusDBAPI(self.db_name, self.auth)
 
         try:
             self.client = Client(DB_PARAMS["scheme"] + "://" + DB_PARAMS["client"])
-            self.client.connect(key="root", team="admin", user="admin", db=DB_PARAMS["dbname"])
+            self.client.connect(key="root", team="admin", user="admin", db=self.db_name)
             print("Connected successfully.")
 
-            self.client.optimize('admin/terminus') # optimise database branch (here main)
-            self.client.optimize('admin/terminus/_meta') # optimise the repository graph (actually creates a squashed flat layer)
-            self.client.optimize('admin/terminus/local/_commits') # commit graph is optimised
+            self.client.optimize(f'admin/{self.db_name}') # optimise database branch (here main)
+            self.client.optimize(f'admin/{self.db_name}/_meta') # optimise the repository graph (actually creates a squashed flat layer)
+            self.client.optimize(f'admin/{self.db_name}/local/_commits') # commit graph is optimised
 
-            self.schema.post_schema()
+            #Check if schema has been posted, if not post
+            schema = self.API.get_schema()
+            if 'Stub' in schema:
+                self.schema.post_schema()
+
 
         except Exception as error:
             print(f"Error occurred: {error}")
@@ -62,7 +81,7 @@ class terminusDB(Database):
         if self.client is None:
             raise Exception("Database connection not established")
 
-        dt = datetime.fromtimestamp(profile.timestamp/1000, tz=timezone.utc) #ms to seconds
+        timestamp = profile.timestamp
         id = "Customer" + "/" + profile.userId
         attributes = profile.attributes
 
@@ -74,8 +93,12 @@ class terminusDB(Database):
         doc = None
         try:
             doc = self.client.get_document(id)
-            if doc:
-                current_attributes = doc["attributes"]
+        
+            if doc["timestamp"] > timestamp:
+                print("TerminusDB does not allow updates to the past")
+                return profile
+            current_attributes = doc["attributes"]
+
         except:
             #print("No current document")
             pass
@@ -83,11 +106,11 @@ class terminusDB(Database):
         new_doc = {}
         new_doc["@id"] = id
         new_doc["@type"] = "Customer"
-        new_doc["at"] = dt
+        new_doc["at"] = timestamp
 
         new_attributes = current_attributes
 
-        #2. Update attributes for given time
+        #2. Update attributes
         for (attr, value) in attributes.items():
             rule = self.rules.get_rule_by_atrr(attr)
 
@@ -113,11 +136,11 @@ class terminusDB(Database):
         new_doc["attributes"] = new_attributes
     
         if doc:
-            self.client.update_document(new_doc)
+            self.client.update_document(new_doc, commit_msg=timestamp)
             return profile
 
         #Insert into TerminusDB    
-        self.client.insert_document(new_doc)
+        self.client.insert_document(new_doc, commit_msg=timestamp)
         return profile
         
 
@@ -126,21 +149,26 @@ class terminusDB(Database):
         if self.client is None:
             raise Exception("Database connection not established")
 
-        if timestamp:
-            dt = datetime.fromtimestamp(timestamp, tz=timezone.utc) #assuming it is in seconds
         id = "Customer" + "/" + userId
+        print(type(timestamp))
 
         try: 
             doc = self.client.get_document(id)
-            if doc:
-                #Use the user id without the customer
-                doc["userId"] = userId
 
-                #Remove the not key/value created by terminus
-                doc["attributes"].pop("@id", None)
-                doc["attributes"].pop("@type", None)
-                return UserProfile(**doc)
+            #TODO
+            if timestamp and int(doc['at']) > timestamp:
+                print("Get history")
+                self.API.get_latest_state(id, timestamp)
+                
+            #Use the user id without the customer
+            doc["userId"] = userId
+
+            #Remove the not key/value created by terminus
+            doc["attributes"].pop("@id", None)
+            doc["attributes"].pop("@type", None)
+            return UserProfile(**doc)
         except:
+            print("No user with that id was found")
             return None
     
     async def get_all_users_state(self):
@@ -158,25 +186,19 @@ class terminusDB(Database):
         if self.client is None:
             raise Exception("Database connection not established")
         
-        dt = datetime.fromtimestamp(profile.timestamp/1000, tz=timezone.utc) #ms to seconds
+        timestamp = profile.timestamp
         userId = profile.userId
         attributes = profile.attributes
         id = "Customer" + "/" + str(uuid.uuid4())
-
-        #Filter bounded-last-unique attributes
-        ignore = self.rules.get_rules_by_type("bounded-last-unique-concatenation.100")
-        for (name, _) in ignore.items():
-            attributes.pop(name, None)
-
 
         new_doc = {}
         new_doc["@id"] = id
         new_doc["@type"] = "Customer"
         new_doc["userId"] = userId
-        new_doc["at"] = dt
+        new_doc["at"] = timestamp
         new_doc["attributes"] = attributes
 
-        self.client.insert_document(new_doc)
+        self.client.insert_document(new_doc, commit_msg=timestamp)
 
         return profile
 
@@ -184,16 +206,14 @@ class terminusDB(Database):
     async def get_user_diff(self, userId: str, timestamp: Optional[int] = None) -> Optional[UserProfile]:
         if self.client is None:
             raise Exception("Database connection not established")
-        
-        if timestamp: 
-            dt = datetime.fromtimestamp(timestamp, tz=timezone.utc) #assuming it is in seconds
-        
+                
         #1. Select all diffs where userId = userId
 
+        #TODO: Do the sorting on the database (take advantage of the QO)
         query = {"@type": "Customer", "userId": userId}
         diffs = self.client.query_document(query, as_list=True)
         
-        diffs.sort(key=lambda doc: doc["at"])
+        diffs.sort(key=lambda diff: diff["at"])
 
         if not diffs:
             return None
@@ -201,6 +221,9 @@ class terminusDB(Database):
         #2. Go trough the attributes and merge them, from older to most recent
         attributes = {}
         for diff in diffs:
+
+            if timestamp and diff["at"] >= timestamp:
+                continue
 
             #Remove the not key/value created by terminus
             diff["attributes"].pop("@id", None)
@@ -224,12 +247,11 @@ class terminusDB(Database):
                 elif rule == "or":
                     attributes[attr] = attributes.get(attr, False) or value  # Logical OR
 
-        #3. <Optional> Merge all updates that are older than x / more than y and cache (faster restore next time)
+        #3. TODO: <Optional> Merge all updates that are older than x / more than y and cache (faster restore next time)
 
         #4. Return as user profile
         latest_timestamp = diffs[-1]["at"]  # Last applied timestamp
-        dt = datetime.strptime(latest_timestamp, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
-        return UserProfile(userId=userId, attributes=attributes, timestamp=int(dt.timestamp()))
+        return UserProfile(userId=userId, attributes=attributes, timestamp=latest_timestamp)
     
     async def get_all_triples(self):
         pp.pprint(wq().star().execute(self.client))
