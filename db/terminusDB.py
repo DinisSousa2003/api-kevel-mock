@@ -89,26 +89,25 @@ class terminusDB(Database):
             return profile
         
         #1. Get the most recent valid attributes (assume updates are in order)
-        current_attributes = {}
+        new_attributes = {}
         doc = None
-        try:
+        if self.client.has_doc(id):
             doc = self.client.get_document(id)
-        
-            if doc["timestamp"] > timestamp:
-                print("TerminusDB does not allow updates to the past")
-                return profile
-            current_attributes = doc["attributes"]
 
-        except:
-            #print("No current document")
+            if int(doc["at"]) > timestamp:
+                print("Ignore updates to the past")
+                return profile
+            print(doc, type(doc))
+            new_attributes = doc["attributes"]
+        else:
+            #print(e)
+            print("No document with that id present")
             pass
 
         new_doc = {}
         new_doc["@id"] = id
         new_doc["@type"] = "Customer"
         new_doc["at"] = timestamp
-
-        new_attributes = current_attributes
 
         #2. Update attributes
         for (attr, value) in attributes.items():
@@ -120,15 +119,15 @@ class terminusDB(Database):
 
             #If exists, is older, else update
             elif rule == "older":
-                new_attributes[attr] = current_attributes.get(attr, value)
+                new_attributes[attr] = new_attributes.get(attr, value)
                 
             #Get value and sum
             elif rule == "sum":
-                new_attributes[attr] = current_attributes.get(attr, 0) + value
+                new_attributes[attr] = new_attributes.get(attr, 0) + value
 
             #Update if value > current
             elif rule == "max":
-                new_attributes[attr] = max(current_attributes.get(attr, float('-inf')), value)
+                new_attributes[attr] = max(new_attributes.get(attr, float('-inf')), value)
 
             elif rule == "or":
                 new_attributes[attr] = value or new_attributes.get(attr, False)
@@ -136,10 +135,12 @@ class terminusDB(Database):
         new_doc["attributes"] = new_attributes
     
         if doc:
+            print("update", new_doc)
             self.client.update_document(new_doc, commit_msg=timestamp)
             return profile
 
-        #Insert into TerminusDB    
+        #Insert into TerminusDB
+        print("insert:", new_doc)    
         self.client.insert_document(new_doc, commit_msg=timestamp)
         return profile
         
@@ -152,14 +153,24 @@ class terminusDB(Database):
         id = "Customer" + "/" + userId
         print(type(timestamp))
 
-        try: 
+        if self.client.has_doc(id):
             doc = self.client.get_document(id)
+
+            present_commit = self.client._get_current_commit()
 
             #TODO
             if timestamp and int(doc['at']) > timestamp:
-                print("Get history")
-                self.API.get_latest_state(id, timestamp)
-                
+                commit = self.API.get_latest_state(id, timestamp)
+
+                if commit:
+                    self.client.ref = commit
+                    doc = self.client.get_document(id)
+                    self.client.ref = present_commit
+                else:
+                    print("No user with that id was found")
+                    return None
+
+
             #Use the user id without the customer
             doc["userId"] = userId
 
@@ -167,7 +178,7 @@ class terminusDB(Database):
             doc["attributes"].pop("@id", None)
             doc["attributes"].pop("@type", None)
             return UserProfile(**doc)
-        except:
+        else:
             print("No user with that id was found")
             return None
     

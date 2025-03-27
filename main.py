@@ -34,7 +34,7 @@ async def startup(app: FastAPI):
 app = FastAPI(lifespan=startup)
 
 @app.post("/populate/state/{n}")
-async def populate_from_file(n: int):
+async def populate_from_file_state(n: int):
     """Update db from reading file data"""
 
     num = 0
@@ -58,7 +58,7 @@ async def populate_from_file(n: int):
     return {"message": f"Performed {num} updates to user profiles"}
 
 @app.post("/populate/diff/{n}")
-async def populate_from_file(n: int):
+async def populate_from_file_diff(n: int):
     """Update db from reading file data"""
 
     num = 0

@@ -30,8 +30,14 @@ class TerminusDBAPI():
         response = requests.request("GET", url, auth=self.auth)
         commits = json.loads(response.text)
 
-        print(commits, type(commits))
+        # Filter commits to only those with timestamps lower than the given timestamp
+        valid_commits = [commit for commit in commits if int(commit['message']) <= timestamp]
 
-        return commits
+        # Find the most recent commit among the valid ones
+        latest_commit = max(valid_commits, key=lambda x: int(x['message']), default=None)
+
+        if latest_commit:
+            return latest_commit['identifier']
+        return None
 
 
