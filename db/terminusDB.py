@@ -129,7 +129,6 @@ class terminusDB(Database):
             raise Exception("Database connection not established")
 
         id = "Customer" + "/" + userId
-        print(type(timestamp))
 
         if self.client.has_doc(id):
             doc = self.client.get_document(id)
@@ -196,9 +195,11 @@ class terminusDB(Database):
                 
         #1. Select all diffs where userId = userId
 
-        #TODO: Do the sorting on the database (take advantage of the QO)
         query = {"@type": "Customer", "userId": userId}
         diffs = self.client.query_document(query, as_list=True)
+
+        #TODO: CHECK THIS QUERY
+        self.client.query(self.API.get_users_diff(userId, timestamp))
         
         diffs.sort(key=lambda diff: diff["at"])
 
