@@ -113,12 +113,10 @@ class terminusDB(Database):
         new_doc["attributes"] = merge_with_past(past, attributes, self.rules)
     
         if doc:
-            print("update", new_doc)
             self.client.update_document(new_doc, commit_msg=timestamp)
             return profile
 
         #Insert into TerminusDB
-        print("insert:", new_doc)    
         self.client.insert_document(new_doc, commit_msg=timestamp)
         return profile
         

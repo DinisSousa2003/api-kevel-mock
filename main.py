@@ -33,53 +33,63 @@ async def startup(app: FastAPI):
 
 app = FastAPI(lifespan=startup)
 
-@app.post("/populate/state/{n}")
-async def populate_from_file_state(n: int):
-    """Update db from reading file data"""
+@app.post("/populate/state")
+async def populate_from_file_state(n: int = 0, u: int = 100):
+    """Update db from reading file data
+    n: number of files
+    u: number of users/updates per file"""
 
     num = 0
+    ids = []
+
     for i in range(0, n+1):
         print("Reading file", i)
 
-        #with open(f'dataset/updates-{i}.jsonl', "r") as updates:
-        with open(f'dataset/small-test.jsonl', "r") as updates:
+        with open(f'dataset/updates-{i}.jsonl', "r") as updates:
+        #with open(f'dataset/small-test.jsonl', "r") as updates:
                 for line in updates:
                         payload = json.loads(line.strip())  # Convert JSON string to dictionary
                         profile = UserProfile(**payload)
+                        ids.append(profile.userId)
 
                         profile = await db.update_user_state(profile)
 
                         num += 1
-                        if num % 10 == 0:
+                        if num % (u/10) == 0:
                             print(num)
-                        if num % 100 == 0:
-                            return {"message": "Done multiple updates"}
+                        if num % u == 0:
+                            break
 
-    return {"message": f"Performed {num} updates to user profiles"}
+    return {"message": f"Performed {num} updates to user profiles", "ids": ids}
 
-@app.post("/populate/diff/{n}")
-async def populate_from_file_diff(n: int):
-    """Update db from reading file data"""
+@app.post("/populate/diff")
+async def populate_from_file_diff(n: int = 0, u: int = 100):
+    """Update db from reading file data
+    n: number of files
+    u: number of users/updates per file"""
 
     num = 0
+    ids = []
+    
     for i in range(0, n+1):
         print("Reading file", i)
 
-        #with open(f'dataset/updates-{i}.jsonl', "r") as updates:
-        with open(f'dataset/small-test.jsonl', "r") as updates:
+        with open(f'dataset/updates-{i}.jsonl', "r") as updates:
+        #with open(f'dataset/small-test.jsonl', "r") as updates:
                 for line in updates:
                         payload = json.loads(line.strip())  # Convert JSON string to dictionary
                         profile = UserProfile(**payload)
+                        ids.append(profile.userId)
 
                         profile = await db.update_user_diff(profile)
 
                         num += 1
-                        if num % 10 == 0:
+                        if num % (u/10) == 0:
                             print(num)
-                        if num % 100 == 0:
-                            return {"message": "Done multiple updates"}
+                        if num % u == 0:
+                            break
 
-    return {"message": f"Performed {num} updates to user profiles"}
+    return {"message": f"Performed {num} updates to user profiles", "ids": ids}
 
 @app.delete("/users")
 async def delete_all():

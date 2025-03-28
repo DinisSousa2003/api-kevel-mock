@@ -99,7 +99,7 @@ class XTDB(Database):
         for future in futures:
             future = merge_with_future(future, attributes, self.rules)
 
-            #TODO: CAN I DO THIS IS A BATCH (?)
+            #TODO: CAN I DO THIS IN A BATCH (?)
             if future['_valid_to']:
                 query = QueryState.INSERT_WITH_TIME_PERIOD(future['attributes'])
                 async with self.conn.cursor() as cur:
