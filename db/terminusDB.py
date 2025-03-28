@@ -12,6 +12,7 @@ import os
 from dotenv import load_dotenv
 from requests.auth import HTTPBasicAuth
 from db.queries.queriesTerminusDB import TerminusDBAPI
+from db.queries.helper import merge_with_past
 
 class terminusDB(Database):
 
@@ -21,8 +22,8 @@ class terminusDB(Database):
 
         self.db_url = db_url
         self.client = None
-        self.rules = Rules()
-        self.schema = MySchema(rules=self.rules.get_all_rules())
+        self.rules = Rules().get_all_rules()
+        self.schema = MySchema(rules=self.rules)
         self.db_name = None
 
         user = os.getenv("TERMINUS_USER", "admin")
@@ -89,7 +90,7 @@ class terminusDB(Database):
             return profile
         
         #1. Get the most recent valid attributes (assume updates are in order)
-        new_attributes = {}
+        past = {}
         doc = None
         if self.client.has_doc(id):
             doc = self.client.get_document(id)
@@ -97,8 +98,7 @@ class terminusDB(Database):
             if int(doc["at"]) > timestamp:
                 print("Ignore updates to the past")
                 return profile
-            print(doc, type(doc))
-            new_attributes = doc["attributes"]
+            past = doc["attributes"]
         else:
             #print(e)
             print("No document with that id present")
@@ -110,29 +110,7 @@ class terminusDB(Database):
         new_doc["at"] = timestamp
 
         #2. Update attributes
-        for (attr, value) in attributes.items():
-            rule = self.rules.get_rule_by_atrr(attr)
-
-             #More recent than past
-            if rule == "most-recent":
-                new_attributes[attr] = value
-
-            #If exists, is older, else update
-            elif rule == "older":
-                new_attributes[attr] = new_attributes.get(attr, value)
-                
-            #Get value and sum
-            elif rule == "sum":
-                new_attributes[attr] = new_attributes.get(attr, 0) + value
-
-            #Update if value > current
-            elif rule == "max":
-                new_attributes[attr] = max(new_attributes.get(attr, float('-inf')), value)
-
-            elif rule == "or":
-                new_attributes[attr] = value or new_attributes.get(attr, False)
-
-        new_doc["attributes"] = new_attributes
+        new_doc["attributes"] = merge_with_past(past, attributes, self.rules)
     
         if doc:
             print("update", new_doc)
@@ -158,7 +136,6 @@ class terminusDB(Database):
 
             present_commit = self.client._get_current_commit()
 
-            #TODO
             if timestamp and int(doc['at']) > timestamp:
                 commit = self.API.get_latest_state(id, timestamp)
 
@@ -169,7 +146,6 @@ class terminusDB(Database):
                 else:
                     print("No user with that id was found")
                     return None
-
 
             #Use the user id without the customer
             doc["userId"] = userId
@@ -233,30 +209,14 @@ class terminusDB(Database):
         attributes = {}
         for diff in diffs:
 
-            if timestamp and diff["at"] >= timestamp:
+            if timestamp and int(diff["at"]) > timestamp:
                 continue
 
             #Remove the not key/value created by terminus
             diff["attributes"].pop("@id", None)
             diff["attributes"].pop("@type", None)
 
-            for attr, value in diff["attributes"].items():
-                rule = self.rules.get_rule_by_atrr(attr)
-
-                if rule == "most-recent":
-                    attributes[attr] = value  # Take the latest value encountered
-
-                elif rule == "older":
-                    attributes[attr] = attributes.get(attr, value)  # Keep the first value encountered
-
-                elif rule == "sum":
-                    attributes[attr] = attributes.get(attr, 0) + value  # Accumulate sum
-
-                elif rule == "max":
-                    attributes[attr] = max(attributes.get(attr, float('-inf')), value)  # Keep max value
-
-                elif rule == "or":
-                    attributes[attr] = attributes.get(attr, False) or value  # Logical OR
+            attributes = merge_with_past(attributes, diff["attributes"], self.rules)
 
         #3. TODO: <Optional> Merge all updates that are older than x / more than y and cache (faster restore next time)
 

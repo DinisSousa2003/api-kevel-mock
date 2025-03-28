@@ -8,14 +8,14 @@ from datetime import datetime, timezone
 from rules import Rules
 from db.queries.queriesXTDB import QueryState, QueryDiff
 import uuid
-from collections import defaultdict
+from db.queries.helper import merge_with_past, merge_with_future 
 
 class XTDB(Database):
 
     def __init__(self, db_url):
         self.db_url = db_url
         self.conn = None  # Will hold the connection
-        self.rules = Rules()
+        self.rules = Rules().get_all_rules()
 
     async def connect(self):
         parsed_url = urlparse(self.db_url) 
@@ -57,43 +57,22 @@ class XTDB(Database):
         params = (id, dt)
         params2 = (dt, id)
 
-
         if not attributes:
             return profile
         
         #1. Get most recent valid attributes
-        new_attributes = {}
+        past = {}
 
         async with self.conn.cursor() as cur:
             query = QueryState.SELECT_ALL_CURRENT_ATTR_VT
             await cur.execute(query, params2, prepare=False)
             row = await cur.fetchone()
             if row:
-                new_attributes = row['attributes']
+                past = row['attributes']
 
 
         #2. Update attributes for given time
-        for (attr, value) in profile.attributes.items():
-            rule = self.rules.get_rule_by_atrr(attr)
-
-            #More recent than past
-            if rule == "most-recent":
-                new_attributes[attr] = value
-
-            #If exists, is older, else update
-            elif rule == "older":
-                new_attributes[attr] = new_attributes.get(attr, value)
-                
-            #Get value and sum
-            elif rule == "sum":
-                new_attributes[attr] = new_attributes.get(attr, 0) + value
-
-            #Update if value > current
-            elif rule == "max":
-                new_attributes[attr] = max(new_attributes.get(attr, float('-inf')), value)
-
-            elif rule == "or":
-                new_attributes[attr] = value or new_attributes.get(attr, False)
+        new_attributes = merge_with_past(past, attributes, self.rules)
 
         
         #3. Get all future states
@@ -118,28 +97,7 @@ class XTDB(Database):
 
         #5. Update all future states
         for future in futures:
-            for (attr, value) in profile.attributes.items():
-                rule = self.rules.get_rule_by_atrr(attr)
-
-                #Value if value does not exist (future is more recent)
-                if rule == "most-recent":
-                    future['attributes'][attr] = future['attributes'].get(attr, value)
-                
-                #Value is always older than future
-                elif rule == "older":
-                    future['attributes'][attr] = value
-                    
-                #Add value to the attributes
-                elif rule == "sum":
-                    future['attributes'][attr] = (future['attributes'].get(attr, 0)) + value
-
-                #Update if value > current
-                elif rule == "max":
-                    future['attributes'][attr] = max(future['attributes'].get(attr, float('-inf')), value)
-
-                #Or between current and value
-                elif rule == "or":
-                    future['attributes'][attr] = value or future['attributes'].get(attr, False)
+            future = merge_with_future(future, attributes, self.rules)
 
             #TODO: CAN I DO THIS IS A BATCH (?)
             if future['_valid_to']:
@@ -167,12 +125,12 @@ class XTDB(Database):
             
             query = QueryState.SELECT_USER_WITH_VT
             
-            dt = datetime.fromtimestamp(timestamp, tz=timezone.utc) #assuming it is in seconds
+            dt = datetime.fromtimestamp(timestamp/1000, tz=timezone.utc) #ms to seconds
             params = (dt, userId)
 
         
         async with self.conn.cursor() as cur:
-            await cur.execute(query, params)
+            await cur.execute(query, params, prepare=False)
             row = await cur.fetchone()
             if row:
                 return UserProfile(userId=row['_id'], attributes=row['attributes'], timestamp=int(row['_valid_from'].timestamp()))
@@ -230,38 +188,20 @@ class XTDB(Database):
             
             query = QueryDiff.SELECT_DIFFS_USER_UP_TO_VT
             
-            dt = datetime.fromtimestamp(timestamp, tz=timezone.utc) #assuming it is in seconds
-            params = (dt, userId)
+            dt = datetime.fromtimestamp(timestamp/1000, tz=timezone.utc) #ms to seconds
+            params = (userId, dt)
 
         async with self.conn.cursor() as cur:
             await cur.execute(query, params, prepare=False)
             diffs = await cur.fetchall()
 
-        
-        #print(diffs)
         if not diffs:
             return None
         
         #2. Go trough the attributes and merge them, from older to most recent
         attributes = {}
         for diff in diffs:
-            for attr, value in diff["attributes"].items():
-                rule = self.rules.get_rule_by_atrr(attr)
-
-                if rule == "most-recent":
-                    attributes[attr] = value  # Take the latest value encountered
-
-                elif rule == "older":
-                    attributes[attr] = attributes.get(attr, value)  # Keep the first value encountered
-
-                elif rule == "sum":
-                    attributes[attr] = attributes.get(attr, 0) + value  # Accumulate sum
-
-                elif rule == "max":
-                    attributes[attr] = max(attributes.get(attr, float('-inf')), value)  # Keep max value
-
-                elif rule == "or":
-                    attributes[attr] = attributes.get(attr, False) or value  # Logical OR
+            attributes = merge_with_past(attributes, diff["attributes"], self.rules)
 
         #3. <Optional> Merge all updates that are older than x / more than y and cache (faster restore next time)
 

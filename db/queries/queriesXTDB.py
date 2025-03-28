@@ -10,7 +10,7 @@ class QueryState():
                     FOR VALID_TIME AS OF %s AS c
                     WHERE _id = %s;"""
     
-    SELECT_ALL_CURRENT_ATTR_VT = """SELECT * _id FROM customer
+    SELECT_ALL_CURRENT_ATTR_VT = """SELECT * FROM customer
                     FOR VALID_TIME AS OF %s
                     WHERE _id = %s;"""
 

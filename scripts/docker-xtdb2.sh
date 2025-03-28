@@ -10,6 +10,10 @@
 # Add -v to persist states
 # From https://docs.xtdb.com/intro/installation-via-docker.html
 
+docker rm -f xtdb-2
+
+sudo rm -rf /tmp/xtdb-data-dir
+
 docker run -it --name="xtdb-2" --pull=always \
   -p 5432:5432 \
   -p 8080:8080 \
