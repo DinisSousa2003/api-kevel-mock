@@ -30,12 +30,13 @@ print(f"Started test in mode {mode}!")
 
 # Step 1: Populate the database
 start_time = time.time()
-populate_response = requests.post(POPULATE_ENDPOINT, params={"u":100000, "n":0})
+populate_response = requests.post(POPULATE_ENDPOINT, params={"u":100, "n":0})
 end_time = time.time()
 
 if populate_response.status_code == 200:
     data = populate_response.json()
-    user_ids = data.get("ids", [])
+    user_ids = data.get("ids", set())
+    user_ids = list(user_ids)
     print(f"Database populated. Time taken: {end_time - start_time:.4f} seconds")
 else:
     print("Failed to populate database.", populate_response.text)

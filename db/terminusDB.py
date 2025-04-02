@@ -192,14 +192,15 @@ class terminusDB(Database):
             raise Exception("Database connection not established")
                 
         #1. Select all diffs where userId = userId
+        query = self.API.get_users_diff(userId, timestamp)
+        result = self.client.query(query)
 
-        query = {"@type": "Customer", "userId": userId}
-        diffs = self.client.query_document(query, as_list=True)
+        diffs = None
 
-        #TODO: CHECK THIS QUERY
-        self.client.query(self.API.get_users_diff(userId, timestamp))
-        
-        diffs.sort(key=lambda diff: diff["at"])
+        if result["bindings"]:
+            diffs = result["bindings"]
+        else:
+            print("Cannot find result.")
 
         if not diffs:
             return None
@@ -207,9 +208,6 @@ class terminusDB(Database):
         #2. Go trough the attributes and merge them, from older to most recent
         attributes = {}
         for diff in diffs:
-
-            if timestamp and int(diff["at"]) > timestamp:
-                continue
 
             #Remove the not key/value created by terminus
             diff["attributes"].pop("@id", None)
@@ -220,7 +218,7 @@ class terminusDB(Database):
         #3. TODO: <Optional> Merge all updates that are older than x / more than y and cache (faster restore next time)
 
         #4. Return as user profile
-        latest_timestamp = diffs[-1]["at"]  # Last applied timestamp
+        latest_timestamp = diffs[-1]["at"]["@value"]  # Last applied timestamp
         return UserProfile(userId=userId, attributes=attributes, timestamp=latest_timestamp)
     
     async def get_all_triples(self):

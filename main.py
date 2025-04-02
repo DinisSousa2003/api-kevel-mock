@@ -40,7 +40,7 @@ async def populate_from_file_state(n: int = 0, u: int = 100):
     u: number of users/updates per file"""
 
     num = 0
-    ids = []
+    ids = set()
 
     for i in range(0, n+1):
         print("Reading file", i)
@@ -50,7 +50,7 @@ async def populate_from_file_state(n: int = 0, u: int = 100):
                 for line in updates:
                         payload = json.loads(line.strip())  # Convert JSON string to dictionary
                         profile = UserProfile(**payload)
-                        ids.append(profile.userId)
+                        ids.add(profile.userId)
 
                         profile = await db.update_user_state(profile)
 
@@ -69,7 +69,7 @@ async def populate_from_file_diff(n: int = 0, u: int = 100):
     u: number of users/updates per file"""
 
     num = 0
-    ids = []
+    ids = set()
     
     for i in range(0, n+1):
         print("Reading file", i)
@@ -79,7 +79,7 @@ async def populate_from_file_diff(n: int = 0, u: int = 100):
                 for line in updates:
                         payload = json.loads(line.strip())  # Convert JSON string to dictionary
                         profile = UserProfile(**payload)
-                        ids.append(profile.userId)
+                        ids.add(profile.userId)
 
                         profile = await db.update_user_diff(profile)
 

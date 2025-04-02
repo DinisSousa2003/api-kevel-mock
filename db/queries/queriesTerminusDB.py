@@ -1,5 +1,5 @@
 import json
-from terminusdb_client import WOQLQuery
+from terminusdb_client import WOQLQuery as wq
 import requests
 from requests.auth import HTTPBasicAuth
 
@@ -10,25 +10,26 @@ class TerminusDBAPI():
 
 
     def get_users_diff(self, customer_id, timestamp):
-        wq = WOQLQuery()
 
-        (v_customer, v_user_id, v_attributes_id, v_attributes, v_at) = wq.variables('customer', 'user_id', 'attributes_id', 'attributes', 'at')
+        (v_customer, v_user_id, v_attributes_id, v_attributes, v_at) = wq().vars('customer', 'user_id', 'attributes_id', 'attributes', 'at')
 
-        query = (wq.select(v_attributes)
-                    .woql_and(
-                    wq.select(v_attributes_id)
-                        .triple(v_customer, "rdf:type", "@schema:Customer")
-                        .triple(v_customer, "userId", v_user_id)
-                        .triple(v_customer, "attributes", v_attributes_id)
-                        .triple(v_customer, "at", v_at)
-                        .eq(v_user_id, customer_id)
-                        .woql_not().less(v_at, timestamp)
-                        .order_by(["at", "asc"]),
-                        
-                    wq.read_document(v_attributes_id, v_attributes)
-                    )
-                )
-        
+        query =    wq().select(v_attributes, v_at, wq().woql_and(
+                        wq().select(v_attributes_id, v_at,
+                            wq().woql_and(
+                                wq().triple(v_customer, "rdf:type", "@schema:Customer"),
+                                wq().triple(v_customer, "userId", v_user_id),
+                                wq().triple(v_customer, "attributes", v_attributes_id),
+                                wq().triple(v_customer, "at", v_at),
+                                wq().eq(v_user_id, wq().string(customer_id)),
+                                wq().woql_not(
+                                    wq().greater(v_at, timestamp)
+                                ),
+                                wq().order_by([v_at, "asc"])
+                            ),
+                        ),
+                        wq().read_document(v_attributes_id,  v_attributes)
+                    ))
+    
         return query
 
     def get_schema(self):
