@@ -6,3 +6,4 @@ psycopg[binary]
 click
 terminus
 terminusdb-client
+sortedcontainers

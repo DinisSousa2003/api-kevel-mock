@@ -2,6 +2,7 @@ import json
 from terminusdb_client import WOQLQuery as wq
 import requests
 from requests.auth import HTTPBasicAuth
+import bisect
 
 class TerminusDBAPI():
     def __init__(self, db_name, auth: HTTPBasicAuth):
@@ -51,14 +52,17 @@ class TerminusDBAPI():
     def get_latest_state(self, customer_id, timestamp):
         url = f"http://127.0.0.1:6363/api/history/admin/{self.db_name}?id={customer_id}"
 
+
+        #1. Get all the commits associated with a document
+
         response = requests.request("GET", url, auth=self.auth)
         commits = json.loads(response.text)
 
-        # Filter commits to only those with timestamps lower than the given timestamp
-        valid_commits = [commit for commit in commits if int(commit['message']) <= timestamp]
-
-        # Find the most recent commit among the valid ones
-        latest_commit = max(valid_commits, key=lambda x: int(x['message']), default=None)
+        #2. In Terminus (with state), we are enforcing that the commits are made in order, so the commits are already sorted
+        index = bisect.bisect_right([-(int(commit['message'])) for commit in commits], -timestamp)
+        
+        # The most recent commit before or at the timestamp is the one at index-1
+        latest_commit = commits[index-1] if index > 0 else None
 
         if latest_commit:
             return latest_commit['identifier']

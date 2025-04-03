@@ -128,12 +128,15 @@ class terminusDB(Database):
 
         id = "Customer" + "/" + userId
 
+        #1. Get the current state of the user
         if self.client.has_doc(id):
             doc = self.client.get_document(id)
 
-            present_commit = self.client._get_current_commit()
-
+            #2. If the current state is in the future from the timestamp given, we need to search in the history
             if timestamp and int(doc['at']) > timestamp:
+                present_commit = self.client._get_current_commit()
+
+                #3. Get the latest commit at timestamp and retrieve the document in that state
                 commit = self.API.get_latest_state(id, timestamp)
 
                 if commit:
@@ -144,10 +147,10 @@ class terminusDB(Database):
                     print("No user with that id was found")
                     return None
 
-            #Use the user id without the customer
+            #4. Use the user id without the customer
             doc["userId"] = userId
 
-            #Remove the not key/value created by terminus
+            #5. Remove the not key/value created by terminus
             doc["attributes"].pop("@id", None)
             doc["attributes"].pop("@type", None)
             return UserProfile(**doc)
@@ -170,11 +173,13 @@ class terminusDB(Database):
         if self.client is None:
             raise Exception("Database connection not established")
         
+        #1. Create a unique identifier for the change
         timestamp = profile.timestamp
         userId = profile.userId
         attributes = profile.attributes
         id = "Customer" + "/" + str(uuid.uuid4())
 
+        #2. Insert the update
         new_doc = {}
         new_doc["@id"] = id
         new_doc["@type"] = "Customer"
