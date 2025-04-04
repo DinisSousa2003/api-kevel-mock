@@ -27,6 +27,8 @@ class XTDB(Database):
             "user": parsed_url.username,
         }
 
+        print(f"Connecting to: {DB_PARAMS['host']}://{DB_PARAMS['port']}", f"{DB_PARAMS['dbname']}")
+
         try:
             self.conn = await pg.AsyncConnection.connect(**DB_PARAMS, row_factory=dict_row, autocommit=True, prepare_threshold=0)
             print("Connected to XTDB database successfully.")

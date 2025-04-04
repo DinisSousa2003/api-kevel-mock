@@ -76,8 +76,8 @@ class MySchema:
         'Content-Type': 'application/json'
         }
         payload = json.dumps(self.get_schema())
-        username = os.getenv("TERMINUS_USER")
-        password = os.getenv("TERMINUS_KEY")
+        username = os.getenv("USERNAME")
+        password = os.getenv("KEY")
 
         response = requests.request("POST", url, headers=headers, data=payload, auth=HTTPBasicAuth(username, password))
         print(response.text)

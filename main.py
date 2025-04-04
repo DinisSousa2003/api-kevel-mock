@@ -4,6 +4,7 @@ from models import UserProfile
 from db.in_memory import InMemoryDB
 from db.XTDB import XTDB
 from db.terminusDB import terminusDB
+from db.immudb import immudb
 from typing import Optional
 from config import config
 from time import sleep
@@ -30,6 +31,12 @@ async def startup(app: FastAPI):
         db = terminusDB(config.DATABASE_URL)
         await db.connect()  
         yield
+        #db.clear()
+    elif config.DATABASE_NAME == "IMMUDB":
+        db = immudb(config.DATABASE_URL)
+        await db.connect()  
+        yield
+        #db.clear()
 
 app = FastAPI(lifespan=startup)
 

@@ -7,3 +7,4 @@ click
 terminus
 terminusdb-client
 sortedcontainers
+immudb-py

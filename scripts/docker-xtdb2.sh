@@ -3,8 +3,6 @@
 # `nightly`: built every night from `main` branch
 # `edge`: latest nightly plus urgent fixes
 
-# https://github.com/xtdb/xtdb/pkgs/container/xtdb/374319005?tag=2.0.0-beta6.1
-
 # To delete state: sudo rm -rf /tmp/xtdb-data-dir
 
 # Add -v to persist states

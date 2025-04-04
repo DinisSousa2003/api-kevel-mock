@@ -6,7 +6,7 @@ from rules import Rules
 from terminusdb_client import Client
 from terminusdb_client import WOQLQuery as wq
 import pprint as pp
-from db.schema_maker_terminus import MySchema
+from db.queries.schema_maker_terminus import MySchema
 import uuid
 import os
 from dotenv import load_dotenv
@@ -26,8 +26,8 @@ class terminusDB(Database):
         self.schema = MySchema(rules=self.rules)
         self.db_name = None
 
-        user = os.getenv("TERMINUS_USER", "admin")
-        key = os.getenv("TERMINUS_KEY", "root")
+        user = os.getenv("USERNAME", "admin")
+        key = os.getenv("KEY", "root")
         self.auth = HTTPBasicAuth(user, key)
 
         self.API = None

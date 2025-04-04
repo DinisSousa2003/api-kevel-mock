@@ -58,8 +58,8 @@ headers = {
 'Content-Type': 'application/json'
 }
 payload = json.dumps(schema)
-username = os.getenv("TERMINUS_USER") #default is admin
-password = os.getenv("TERMINUS_KEY") #default is root
+username = os.getenv("USERNAME") #default is admin
+password = os.getenv("KEY") #default is root
 
 response = requests.request("POST", url, headers=headers, data=payload, auth=HTTPBasicAuth(username, password))
 ```
