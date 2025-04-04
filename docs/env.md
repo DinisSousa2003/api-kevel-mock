@@ -23,3 +23,10 @@ DATABASE_NAME=IMMUDB
 DEBUG=false
 USERNAME=immudb
 KEY=immudb
+
+## POSTGRES
+DATABASE_URL=http://127.0.0.1:5432/postgres
+DATABASE_NAME=POSTGRES
+DEBUG=false
+USERNAME=postgres
+KEY=postgres
