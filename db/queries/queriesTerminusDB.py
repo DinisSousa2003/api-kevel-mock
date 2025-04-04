@@ -14,22 +14,23 @@ class TerminusDBAPI():
 
         (v_customer, v_user_id, v_attributes_id, v_attributes, v_at) = wq().vars('customer', 'user_id', 'attributes_id', 'attributes', 'at')
 
-        query =    wq().select(v_attributes, v_at, wq().woql_and(
+        query = wq().select(v_attributes, v_at, 
+                    wq().woql_and(
                         wq().select(v_attributes_id, v_at,
                             wq().woql_and(
                                 wq().triple(v_customer, "rdf:type", "@schema:Customer"),
-                                wq().triple(v_customer, "userId", v_user_id),
+                                wq().triple(v_customer, "userId", wq().string(customer_id)),
                                 wq().triple(v_customer, "attributes", v_attributes_id),
                                 wq().triple(v_customer, "at", v_at),
-                                wq().eq(v_user_id, wq().string(customer_id)),
                                 wq().woql_not(
                                     wq().greater(v_at, timestamp)
                                 ),
-                                wq().order_by([v_at, "asc"])
                             ),
                         ),
-                        wq().read_document(v_attributes_id,  v_attributes)
-                    ))
+                        wq().read_document(v_attributes_id,  v_attributes),
+                        wq().order_by(v_at, order="asc")
+                    )
+                )
     
         return query
 

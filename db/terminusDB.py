@@ -200,6 +200,8 @@ class terminusDB(Database):
         query = self.API.get_users_diff(userId, timestamp)
         result = self.client.query(query)
 
+        print(result)
+
         diffs = None
 
         if result["bindings"]:
