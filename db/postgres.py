@@ -80,7 +80,7 @@ class PostgreSQL(Database):
             past = {}
 
             async with self.conn.cursor() as cur:
-                query = QueryState.SELECT_ALL_CURRENT_ATTR_VT
+                query = QueryState.SELECT_USER_AT
                 await cur.execute(query, params)
                 row = await cur.fetchone()
                 if row:
@@ -109,6 +109,8 @@ class PostgreSQL(Database):
             for future in futures:
                 future = merge_with_future(future, attributes, self.rules)
 
+                print(future["at"])
+
                 params_w_attr = (id, Jsonb(future["attributes"]), future["at"])
 
                 query = QueryState.INSERT_WITH_TIME
@@ -126,10 +128,10 @@ class PostgreSQL(Database):
         
 
         if timestamp: 
-            query = QueryState.SELECT_USER_WITH_VT
+            query = QueryState.SELECT_USER_AT
             
             dt = datetime.fromtimestamp(timestamp/1000, tz=timezone.utc) #ms to seconds
-            params = (dt, userId)
+            params = (userId, dt)
         else:
 
             query = QueryState.SELECT_USER
@@ -137,11 +139,29 @@ class PostgreSQL(Database):
             params = (userId,)
         
         async with self.conn.cursor() as cur:
-            await cur.execute(query, params, prepare=False)
+            await cur.execute(query, params)
             row = await cur.fetchone()
             if row:
-                return UserProfile(userId=row['id'], attributes=row['attributes'], timestamp=int(row['at']))
+                return UserProfile(userId=row['id'], attributes=row['attributes'], timestamp=int(row['at'].timestamp()))
             return None
+        
+    
+    async def get_all_users_state(self):
+        if self.conn is None:
+            raise Exception("Database connection not established")
+
+        query = QueryState.SELECT_ALL_CURRENT
+
+        query = QueryState.SELECT_ALL_VALID_WITH_TIMES
+        
+        #query = QueryState.SELECT_ALL_WITH_TIMES
+
+        #query = QueryState.SELECT_NESTED_ARGUMENTS
+
+        async with self.conn.cursor() as cur:
+            await cur.execute(query)
+            rows = await cur.fetchall()
+            return rows
     
 
 ##########################DIFF BASED FUNCTIONS#################################################
