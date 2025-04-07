@@ -118,18 +118,18 @@ class XTDB(Database):
 
         if self.conn is None:
             raise Exception("Database connection not established")
-
-        query = QueryState.SELECT_USER
-
-        params = (userId,)
+        
 
         if timestamp: 
-            
             query = QueryState.SELECT_USER_WITH_VT
             
             dt = datetime.fromtimestamp(timestamp/1000, tz=timezone.utc) #ms to seconds
             params = (dt, userId)
+        else:
 
+            query = QueryState.SELECT_USER
+
+            params = (userId,)
         
         async with self.conn.cursor() as cur:
             await cur.execute(query, params, prepare=False)
