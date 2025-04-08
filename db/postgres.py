@@ -44,9 +44,10 @@ class PostgreSQL(Database):
             self.conn.adapters.register_dumper(str, pg.types.string.StrDumperVarchar)
 
             #CREATE STATE AND DIFF TABLE, IF THEY DON'T EXIST
-            await self.clear_tables()
+            #await self.clear_tables()
             await self.create_state_customers_table()
             await self.create_diff_customers_table()
+            await self.create_indexes()
 
         except Exception as error:
             print(f"Error occurred: {error}")
@@ -60,12 +61,33 @@ class PostgreSQL(Database):
             await cur.execute(query)
             print("Customer state table dropped.")
 
+            query = QueryDiff.DROP_TABLE
 
-        query = QueryDiff.DROP_TABLE
+            await cur.execute(query)
+            print("Customer state table dropped.")
+
+    async def create_indexes(self):
+         
+        query = QueryState.CREATE_INDEX
 
         async with self.conn.cursor() as cur:
             await cur.execute(query)
-            print("Customer state table dropped.")
+            print("INDEX 1.")
+
+            query = QueryState.CREATE_INDEX2
+            await cur.execute(query)
+            print("INDEX 2.")
+
+            query = QueryDiff.CREATE_INDEX
+            await cur.execute(query)
+            print("INDEX 3.")
+
+            query = QueryDiff.CREATE_INDEX2
+            await cur.execute(query)
+            print("INDEX 4.")
+
+
+
 
 ##########################STATE BASED FUNCTIONS#################################################
 
@@ -102,9 +124,6 @@ class PostgreSQL(Database):
 
 
             #2. Update attributes for given time
-            print(attributes, type(attributes))
-            print(past, type(past))
-
             new_attributes = merge_with_past(past, attributes, self.rules)
             params_w_attr = (id, Jsonb(new_attributes), dt)
 
@@ -227,6 +246,8 @@ class PostgreSQL(Database):
         #3. <Optional> Merge all updates that are older than x / more than y and cache (faster restore next time)
 
         #4. Return as user profile
+        print(diffs)
+
         latest_timestamp = diffs[-1]["at"]  # Last applied timestamp
         return UserProfile(userId=userId, attributes=attributes, timestamp=int(latest_timestamp.timestamp()))
         

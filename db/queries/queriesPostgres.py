@@ -10,6 +10,10 @@ class QueryState():
                         at TIMESTAMP NOT NULL DEFAULT NOW(),
                         PRIMARY KEY (id, at)
                     );"""
+    
+    CREATE_INDEX = """CREATE INDEX IF NOT EXISTS idx_state_id_at_desc ON customer_state(id, at DESC);"""
+
+    CREATE_INDEX2 = """CREATE INDEX IF NOT EXISTS idx_state_at_brin ON customer_state USING BRIN (at);"""
 
     SELECT_USER_AT = """SELECT * FROM customer_state
                     WHERE id = %s AND at <= %s
@@ -41,19 +45,23 @@ class QueryDiff():
     DROP_TABLE = """ DROP TABLE IF EXISTS customer_diff;"""
 
     CREATE_TABLE = """ CREATE TABLE IF NOT EXISTS customer_diff (
-                        id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY
-                        userId TEXT NOT NULL
+                        id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+                        userId TEXT NOT NULL,
                         attributes JSONB NOT NULL,
                         at TIMESTAMP NOT NULL DEFAULT NOW()
                     );"""
     
+    CREATE_INDEX = """CREATE INDEX IF NOT EXISTS idx_customer_diff_userid_at ON customer_diff(userId, at);"""
+
+    CREATE_INDEX2 = """CREATE INDEX IF NOT EXISTS idx_diff_at_brin ON customer_diff USING BRIN (at);"""
+    
     INSERT_UPDATE = """INSERT INTO customer_diff (userId, attributes, at)
                         VALUES (%s, %s, %s);"""
     
-    SELECT_DIFFS = """SELECT attributes FROM customer_diff
-                    WHERE userId = %s
+    SELECT_DIFFS = """SELECT attributes, at FROM customer_diff
+                    WHERE userId = %s AND at <= NOW()
                     ORDER BY at;"""
     
-    SELECT_DIFFS_UP_TO_VT = """SELECT attributes, at FROM customer
+    SELECT_DIFFS_UP_TO_VT = """SELECT attributes, at FROM customer_diff
                     WHERE userId = %s AND at <= %s
                     ORDER BY at;"""""
