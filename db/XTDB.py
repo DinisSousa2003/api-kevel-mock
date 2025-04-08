@@ -167,9 +167,10 @@ class XTDB(Database):
 
         dt = datetime.fromtimestamp(profile.timestamp/1000, tz=timezone.utc) #ms to seconds
         userId = profile.userId
+        attributes = profile.attributes
         id = uuid.uuid4()
 
-        query = QueryDiff.INSERT_UPDATE(profile.attributes)
+        query = QueryDiff.INSERT_UPDATE(attributes)
 
         async with self.conn.cursor() as cur:
                     await cur.execute(query, (id, userId, dt), prepare=False)
@@ -183,15 +184,14 @@ class XTDB(Database):
 
         #1. Select all diffs where userId = userId
 
-        query = QueryDiff.SELECT_DIFFS_USER
-        params = (userId,)
-
         if timestamp: 
-            
             query = QueryDiff.SELECT_DIFFS_USER_UP_TO_VT
             
             dt = datetime.fromtimestamp(timestamp/1000, tz=timezone.utc) #ms to seconds
             params = (userId, dt)
+        else:
+            query = QueryDiff.SELECT_DIFFS_USER
+            params = (userId,)
 
         async with self.conn.cursor() as cur:
             await cur.execute(query, params, prepare=False)

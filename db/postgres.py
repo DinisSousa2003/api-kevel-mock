@@ -44,14 +44,28 @@ class PostgreSQL(Database):
             self.conn.adapters.register_dumper(str, pg.types.string.StrDumperVarchar)
 
             #CREATE STATE AND DIFF TABLE, IF THEY DON'T EXIST
+            await self.clear_tables()
             await self.create_state_customers_table()
-            #self.create_diff_customers_table()
+            await self.create_diff_customers_table()
 
         except Exception as error:
             print(f"Error occurred: {error}")
 
 ##########################BOTH STATE AND DIFF FUNCTIONS###########################################
 
+    async def clear_tables(self):
+        query = QueryState.DROP_TABLE
+
+        async with self.conn.cursor() as cur:
+            await cur.execute(query)
+            print("Customer state table dropped.")
+
+
+        query = QueryDiff.DROP_TABLE
+
+        async with self.conn.cursor() as cur:
+            await cur.execute(query)
+            print("Customer state table dropped.")
 
 ##########################STATE BASED FUNCTIONS#################################################
 
@@ -60,7 +74,7 @@ class PostgreSQL(Database):
 
             async with self.conn.cursor() as cur:
                 await cur.execute(query)
-                print("Customer table exists.")
+                print("Customer state table exists.")
 
     async def update_user_state(self, profile: UserProfile):
 
@@ -152,12 +166,6 @@ class PostgreSQL(Database):
 
         query = QueryState.SELECT_ALL_CURRENT
 
-        query = QueryState.SELECT_ALL_VALID_WITH_TIMES
-        
-        #query = QueryState.SELECT_ALL_WITH_TIMES
-
-        #query = QueryState.SELECT_NESTED_ARGUMENTS
-
         async with self.conn.cursor() as cur:
             await cur.execute(query)
             rows = await cur.fetchall()
@@ -165,5 +173,61 @@ class PostgreSQL(Database):
     
 
 ##########################DIFF BASED FUNCTIONS#################################################
+
+    async def create_diff_customers_table(self):
+            query = QueryDiff.CREATE_TABLE
+
+            async with self.conn.cursor() as cur:
+                await cur.execute(query)
+                print("Customer diff table exists.")
+
+    async def update_user_diff(self, profile: UserProfile):
+
+        if self.conn is None:
+                raise Exception("Database connection not established")
+        
+        dt = datetime.fromtimestamp(profile.timestamp/1000, tz=timezone.utc) #ms to seconds
+        userId = profile.userId
+        attributes = profile.attributes
+
+        query = QueryDiff.INSERT_UPDATE
+
+        async with self.conn.cursor() as cur:
+                    await cur.execute(query, (userId, Jsonb(attributes), dt))
+        
+        return profile
     
-# TODO
+    async def get_user_diff(self, userId: str, timestamp: Optional[int] = None) -> Optional[UserProfile]:
+
+        if self.conn is None:
+                raise Exception("Database connection not established")
+        
+        #1. Select all diffs where userId = userId
+        if timestamp: 
+            query = QueryDiff.SELECT_DIFFS_UP_TO_VT
+            
+            dt = datetime.fromtimestamp(timestamp/1000, tz=timezone.utc) #ms to seconds
+            params = (userId, dt)
+        else:
+            query = QueryDiff.SELECT_DIFFS
+            params = (userId,)
+
+        async with self.conn.cursor() as cur:
+            await cur.execute(query, params, prepare=False)
+            diffs = await cur.fetchall()
+
+        if not diffs:
+            return None
+        
+        #2. Go trough the attributes and merge them, from older to most recent
+        attributes = {}
+        for diff in diffs:
+            attributes = merge_with_past(attributes, diff["attributes"], self.rules)
+
+        #3. <Optional> Merge all updates that are older than x / more than y and cache (faster restore next time)
+
+        #4. Return as user profile
+        latest_timestamp = diffs[-1]["at"]  # Last applied timestamp
+        return UserProfile(userId=userId, attributes=attributes, timestamp=int(latest_timestamp.timestamp()))
+        
+            
