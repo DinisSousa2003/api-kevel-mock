@@ -1,11 +1,11 @@
-from models import UserProfile
+from imports.models import UserProfile
 from typing import Optional
 from db.database import Database
 from urllib.parse import urlparse 
 import psycopg as pg
 from psycopg.rows import dict_row
 from datetime import datetime, timezone
-from rules import Rules
+from imports.rules import Rules
 from db.queries.queriesXTDB import QueryState, QueryDiff
 import uuid
 from db.queries.helper import merge_with_past, merge_with_future 
@@ -126,7 +126,7 @@ class XTDB(Database):
             dt = datetime.fromtimestamp(timestamp/1000, tz=timezone.utc) #ms to seconds
             params = (dt, userId)
         else:
-
+            #TODO: ENSURE I AM NOT READING FROM FUTURE
             query = QueryState.SELECT_USER
 
             params = (userId,)
@@ -190,6 +190,7 @@ class XTDB(Database):
             dt = datetime.fromtimestamp(timestamp/1000, tz=timezone.utc) #ms to seconds
             params = (userId, dt)
         else:
+            #TODO: STOP AT PRESENT TIME
             query = QueryDiff.SELECT_DIFFS_USER
             params = (userId,)
 

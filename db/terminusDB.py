@@ -1,8 +1,8 @@
-from models import UserProfile
+from imports.models import UserProfile
 from typing import Optional
 from db.database import Database
 from urllib.parse import urlparse 
-from rules import Rules
+from imports.rules import Rules
 from terminusdb_client import Client
 from terminusdb_client import WOQLQuery as wq
 import pprint as pp
@@ -132,8 +132,10 @@ class terminusDB(Database):
         if self.client.has_doc(id):
             doc = self.client.get_document(id)
 
+            #TODO: COMPARE WITH NOW TOO TO ENSURE IT IS NOT FROM THE FUTURE
+
             #2. If the current state is in the future from the timestamp given, we need to search in the history
-            if timestamp and int(doc['at']) > timestamp:
+            if timestamp is not None and int(doc['at']) > timestamp:
                 present_commit = self.client._get_current_commit()
 
                 #3. Get the latest commit at timestamp and retrieve the document in that state
@@ -211,6 +213,8 @@ class terminusDB(Database):
 
         if not diffs:
             return None
+        
+        #TODO: STOP AT PRESENT TIME
 
         #2. Go trough the attributes and merge them, from older to most recent
         attributes = {}

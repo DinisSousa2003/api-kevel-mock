@@ -6,7 +6,7 @@ import datetime
 from collections import defaultdict
 from sortedcontainers import SortedList
 
-def analyse_jsonl(file_path, output_path="analyse.png"):
+def analyse_jsonl(file_path, output_path="analysis/analyse.png"):
     total_updates = 0
     user_updates = defaultdict(int)
     attribute_updates = defaultdict(int)
@@ -108,5 +108,9 @@ def analyse_jsonl(file_path, output_path="analyse.png"):
 
 # Example usage:
 file_path = "../dataset/updates-0.jsonl"  # Replace with your actual file path
-stats = analyse_jsonl(file_path, "analyse.png")
+stats = analyse_jsonl(file_path, "analysis/analyse.png")
 print(stats)
+
+with open("analysis/stats.txt", "w") as file:
+    for k, v in stats.items():
+        file.write(f"{k}: {v}\n")

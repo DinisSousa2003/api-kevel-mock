@@ -1,10 +1,10 @@
 from urllib.parse import urlparse
 from immudb.client import ImmudbClient, PersistentRootService
 from db.database import Database
-from rules import Rules
+from imports.rules import Rules
 import os
 from dotenv import load_dotenv
-from models import UserProfile
+from imports.models import UserProfile
 from typing import Optional
 
 class immudb(Database):

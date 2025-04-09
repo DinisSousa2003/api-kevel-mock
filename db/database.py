@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from models import UserProfile
+from imports.models import UserProfile
 from typing import Optional, Dict
 
 class Database(ABC):

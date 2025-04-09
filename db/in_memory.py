@@ -1,4 +1,4 @@
-from models import UserProfile
+from imports.models import UserProfile
 from typing import Optional, Dict
 from db.database import Database
 import time

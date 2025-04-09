@@ -1,4 +1,4 @@
-from models import UserProfile
+from imports.models import UserProfile
 from typing import Optional
 from db.database import Database
 from urllib.parse import urlparse 
@@ -7,7 +7,7 @@ from psycopg.types.json import Jsonb
 from psycopg.rows import dict_row
 from datetime import datetime, timezone
 from db.queries.queriesPostgres import QueryState, QueryDiff
-from rules import Rules
+from imports.rules import Rules
 from db.queries.helper import merge_with_past, merge_with_future 
 import os
 from dotenv import load_dotenv

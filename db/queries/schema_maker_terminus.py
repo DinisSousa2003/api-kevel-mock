@@ -1,7 +1,7 @@
 import json
 import os
 from terminusdb_client import WOQLClient
-from rules import Rules
+from imports.rules import Rules
 import requests
 import json
 from requests.auth import HTTPBasicAuth

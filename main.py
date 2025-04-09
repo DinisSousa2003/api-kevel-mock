@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from contextlib import asynccontextmanager
-from models import UserProfile
+from imports.models import UserProfile
 from db.in_memory import InMemoryDB
 from db.XTDB import XTDB
 from db.terminusDB import terminusDB
