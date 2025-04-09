@@ -67,7 +67,7 @@ class QueryDiff():
     
     SELECT_DIFFS_USER = """SELECT attributes, _valid_from FROM customer
                     FOR ALL VALID_TIME
-                    WHERE userId = %s
+                    WHERE userId = %s AND _valid_from <= CURRENT_TIMESTAMP()
                     ORDER BY _valid_from;"""
     
     SELECT_ALL_USERS = """SELECT DISTINCT userId

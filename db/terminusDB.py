@@ -213,8 +213,6 @@ class terminusDB(Database):
 
         if not diffs:
             return None
-        
-        #TODO: STOP AT PRESENT TIME
 
         #2. Go trough the attributes and merge them, from older to most recent
         attributes = {}
