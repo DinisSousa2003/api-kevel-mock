@@ -1,17 +1,17 @@
-from imports.models import UserProfile
 from typing import Optional
-from db.database import Database
 from urllib.parse import urlparse 
 import psycopg as pg
 from psycopg.types.json import Jsonb
 from psycopg.rows import dict_row
 from datetime import datetime, timezone
+from db.database import Database
 from db.queries.queriesPostgres import QueryState, QueryDiff
-from imports.rules import Rules
 from db.queries.helper import merge_with_past, merge_with_future 
+from imports.models import UserProfile
+from imports.rules import Rules
+from imports.test_helper import GetType, PutType
 import os
 from dotenv import load_dotenv
-import json
 class PostgreSQL(Database):
 
     def __init__(self, db_url):
@@ -110,7 +110,7 @@ class PostgreSQL(Database):
             params = (id, dt)
 
             if not attributes:
-                return profile
+                return (None, PutType.NO_UPDATE)
             
             #1. Get most recent valid attributes
             past = {}
@@ -138,11 +138,12 @@ class PostgreSQL(Database):
                 await cur.execute(query, params)
                 futures = await cur.fetchall()
 
-            #5. Update all future states
+            if not futures:
+                 return (profile, PutType.MOST_RECENT)
+
+            #4. Update all future states
             for future in futures:
                 future = merge_with_future(future, attributes, self.rules)
-
-                print(future["at"])
 
                 params_w_attr = (id, Jsonb(future["attributes"]), future["at"])
 
@@ -150,8 +151,7 @@ class PostgreSQL(Database):
                 async with self.conn.cursor() as cur:
                     await cur.execute(query, params_w_attr)
             
-            
-            return profile
+            return (profile, PutType.PAST)
     
 
     async def get_user_state(self, userId: str, timestamp: Optional[int] = None) -> Optional[UserProfile]:
@@ -159,24 +159,26 @@ class PostgreSQL(Database):
         if self.conn is None:
             raise Exception("Database connection not established")
         
+        typeResponse = GetType.CURRENT
 
         if timestamp: 
             query = QueryState.SELECT_USER_AT
-            
             dt = datetime.fromtimestamp(timestamp/1000, tz=timezone.utc) #ms to seconds
             params = (userId, dt)
+            typeResponse = GetType.TIMESTAMP
+
         else:
-
             query = QueryState.SELECT_USER
-
             params = (userId,)
         
         async with self.conn.cursor() as cur:
             await cur.execute(query, params)
             row = await cur.fetchone()
             if row:
-                return UserProfile(userId=row['id'], attributes=row['attributes'], timestamp=int(row['at'].timestamp()))
-            return None
+                profile = UserProfile(userId=row['id'], attributes=row['attributes'], timestamp=int(row['at'].timestamp()))
+                return (profile, typeResponse)
+        
+        return (None, GetType.NO_USER_AT_TIME)
         
     
     async def get_all_users_state(self):
@@ -214,12 +216,15 @@ class PostgreSQL(Database):
         async with self.conn.cursor() as cur:
                     await cur.execute(query, (userId, Jsonb(attributes), dt))
         
-        return profile
+        #WHEN INSERTING DIFFS, THERE IS NO DIFFERENCE IN UPDATE
+        return (profile, PutType.MOST_RECENT)
     
     async def get_user_diff(self, userId: str, timestamp: Optional[int] = None) -> Optional[UserProfile]:
 
         if self.conn is None:
                 raise Exception("Database connection not established")
+        
+        typeResponse = GetType.CURRENT
         
         #1. Select all diffs where userId = userId
         if timestamp: 
@@ -227,6 +232,8 @@ class PostgreSQL(Database):
             
             dt = datetime.fromtimestamp(timestamp/1000, tz=timezone.utc) #ms to seconds
             params = (userId, dt)
+            typeResponse = GetType.TIMESTAMP
+
         else:
             query = QueryDiff.SELECT_DIFFS
             params = (userId,)
@@ -236,7 +243,7 @@ class PostgreSQL(Database):
             diffs = await cur.fetchall()
 
         if not diffs:
-            return None
+            return (None, GetType.NO_USER_AT_TIME)
         
         #2. Go trough the attributes and merge them, from older to most recent
         attributes = {}
@@ -246,9 +253,8 @@ class PostgreSQL(Database):
         #3. <Optional> Merge all updates that are older than x / more than y and cache (faster restore next time)
 
         #4. Return as user profile
-        print(diffs)
-
         latest_timestamp = diffs[-1]["at"]  # Last applied timestamp
-        return UserProfile(userId=userId, attributes=attributes, timestamp=int(latest_timestamp.timestamp()))
+        profile = UserProfile(userId=userId, attributes=attributes, timestamp=int(latest_timestamp.timestamp()))
+        return (profile, typeResponse)
         
             

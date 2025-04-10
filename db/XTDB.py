@@ -1,14 +1,15 @@
-from imports.models import UserProfile
-from typing import Optional
-from db.database import Database
-from urllib.parse import urlparse 
 import psycopg as pg
 from psycopg.rows import dict_row
-from datetime import datetime, timezone
+from imports.models import UserProfile
+from imports.test_helper import GetType, PutType
 from imports.rules import Rules
 from db.queries.queriesXTDB import QueryState, QueryDiff
-import uuid
+from db.database import Database
 from db.queries.helper import merge_with_past, merge_with_future 
+import uuid
+from datetime import datetime, timezone
+from urllib.parse import urlparse 
+from typing import Optional
 
 class XTDB(Database):
 
@@ -60,7 +61,7 @@ class XTDB(Database):
         params2 = (dt, id)
 
         if not attributes:
-            return profile
+            return (None, PutType.NO_UPDATE)
         
         #1. Get most recent valid attributes
         past = {}
@@ -88,20 +89,23 @@ class XTDB(Database):
             query = QueryState.INSERT_WITH_TIME(new_attributes)
             async with self.conn.cursor() as cur:
                 await cur.execute(query, params, prepare=False)
+            
+            return (profile, PutType.MOST_RECENT)
 
         #4. Update is in the past
-        else:
-            #Update from timestamp to the first _valid_to
-            query = QueryState.INSERT_WITH_TIME_PERIOD(new_attributes)
-            params3 = params + (futures[0]['_valid_from'], )
-            async with self.conn.cursor() as cur:
-                await cur.execute(query, params3, prepare=False)
+
+        #Update from timestamp to the first _valid_to
+        query = QueryState.INSERT_WITH_TIME_PERIOD(new_attributes)
+        params3 = params + (futures[0]['_valid_from'], )
+        async with self.conn.cursor() as cur:
+            await cur.execute(query, params3, prepare=False)
 
         #5. Update all future states
         for future in futures:
             future = merge_with_future(future, attributes, self.rules)
 
             #TODO: CAN I DO THIS IN A BATCH (?)
+            #TODO: CAN I USE JSONB LIKE I DO IN POSTGRES?
             if future['_valid_to']:
                 query = QueryState.INSERT_WITH_TIME_PERIOD(future['attributes'])
                 async with self.conn.cursor() as cur:
@@ -112,31 +116,34 @@ class XTDB(Database):
                     await cur.execute(query, (id, future['_valid_from']), prepare=False)
         
         
-        return profile
+        return (profile, PutType.PAST)
 
     async def get_user_state(self, userId: str, timestamp: Optional[int] = None) -> Optional[UserProfile]:
 
         if self.conn is None:
             raise Exception("Database connection not established")
         
+        typeResponse = GetType.CURRENT
 
         if timestamp: 
             query = QueryState.SELECT_USER_WITH_VT
             
             dt = datetime.fromtimestamp(timestamp/1000, tz=timezone.utc) #ms to seconds
             params = (dt, userId)
-        else:
-            #TODO: ENSURE I AM NOT READING FROM FUTURE
-            query = QueryState.SELECT_USER
+            typeResponse = GetType.TIMESTAMP
 
+        else:
+            query = QueryState.SELECT_USER
             params = (userId,)
         
         async with self.conn.cursor() as cur:
             await cur.execute(query, params, prepare=False)
             row = await cur.fetchone()
             if row:
-                return UserProfile(userId=row['_id'], attributes=row['attributes'], timestamp=int(row['_valid_from'].timestamp()))
-            return None
+                profile = UserProfile(userId=row['_id'], attributes=row['attributes'], timestamp=int(row['_valid_from'].timestamp()))
+                return (profile, typeResponse)
+            
+        return (None, GetType.NO_USER_AT_TIME)
         
     async def get_all_users_state(self):
          
@@ -175,22 +182,24 @@ class XTDB(Database):
         async with self.conn.cursor() as cur:
                     await cur.execute(query, (id, userId, dt), prepare=False)
         
-        return profile
+        return (profile, PutType.MOST_RECENT)
 
     async def get_user_diff(self, userId: str, timestamp: Optional[int] = None) -> Optional[UserProfile]:
 
         if self.conn is None:
             raise Exception("Database connection not established")
+        
+        typeResponse = GetType.CURRENT
 
         #1. Select all diffs where userId = userId
-
         if timestamp: 
             query = QueryDiff.SELECT_DIFFS_USER_UP_TO_VT
             
             dt = datetime.fromtimestamp(timestamp/1000, tz=timezone.utc) #ms to seconds
             params = (userId, dt)
+            typeResponse = GetType.TIMESTAMP
+
         else:
-            #TODO: STOP AT PRESENT TIME
             query = QueryDiff.SELECT_DIFFS_USER
             params = (userId,)
 
@@ -199,7 +208,7 @@ class XTDB(Database):
             diffs = await cur.fetchall()
 
         if not diffs:
-            return None
+            return (None, GetType.NO_USER_AT_TIME)
         
         #2. Go trough the attributes and merge them, from older to most recent
         attributes = {}
@@ -210,7 +219,8 @@ class XTDB(Database):
 
         #4. Return as user profile
         latest_timestamp = diffs[-1]["_valid_from"]  # Last applied timestamp
-        return UserProfile(userId=userId, attributes=attributes, timestamp=int(latest_timestamp.timestamp()))
+        profile = UserProfile(userId=userId, attributes=attributes, timestamp=int(latest_timestamp.timestamp()))
+        return (profile, typeResponse)
         
     async def get_all_users_diff(self):
          

@@ -1,18 +1,20 @@
-from imports.models import UserProfile
+import time
 from typing import Optional
-from db.database import Database
 from urllib.parse import urlparse 
 from imports.rules import Rules
+from imports.models import UserProfile
+from imports.test_helper import GetType, PutType
 from terminusdb_client import Client
 from terminusdb_client import WOQLQuery as wq
-import pprint as pp
+from db.database import Database
 from db.queries.schema_maker_terminus import MySchema
-import uuid
-import os
-from dotenv import load_dotenv
-from requests.auth import HTTPBasicAuth
 from db.queries.queriesTerminusDB import TerminusDBAPI
 from db.queries.helper import merge_with_past
+from requests.auth import HTTPBasicAuth
+import uuid
+import os
+import pprint as pp
+from dotenv import load_dotenv
 
 class terminusDB(Database):
 
@@ -87,7 +89,7 @@ class terminusDB(Database):
         attributes = profile.attributes
 
         if not attributes:
-            return profile
+            return (None, PutType.NO_UPDATE)
         
         #1. Get the most recent valid attributes (assume updates are in order)
         past = {}
@@ -96,29 +98,23 @@ class terminusDB(Database):
             doc = self.client.get_document(id)
 
             if int(doc["at"]) > timestamp:
-                print("Ignore updates to the past")
-                return profile
+                return (None, PutType.PAST)
             past = doc["attributes"]
-        else:
-            #print(e)
-            print("No document with that id present")
-            pass
 
         new_doc = {}
         new_doc["@id"] = id
         new_doc["@type"] = "Customer"
         new_doc["at"] = timestamp
 
-        #2. Update attributes
+        #2. Update attributes -> in order, always most recent
         new_doc["attributes"] = merge_with_past(past, attributes, self.rules)
     
         if doc:
             self.client.update_document(new_doc, commit_msg=timestamp)
-            return profile
+            return (profile, PutType.MOST_RECENT)
 
-        #Insert into TerminusDB
         self.client.insert_document(new_doc, commit_msg=timestamp)
-        return profile
+        return (profile, PutType.MOST_RECENT)
         
 
     async def get_user_state(self, userId: str, timestamp: Optional[int] = None) -> Optional[UserProfile]:
@@ -132,10 +128,14 @@ class terminusDB(Database):
         if self.client.has_doc(id):
             doc = self.client.get_document(id)
 
-            #TODO: COMPARE WITH NOW TOO TO ENSURE IT IS NOT FROM THE FUTURE
+            typeResponse = GetType.CURRENT
+
+            #1.1. Get now
+            if timestamp is None:
+                timestamp = int(time.time())
 
             #2. If the current state is in the future from the timestamp given, we need to search in the history
-            if timestamp is not None and int(doc['at']) > timestamp:
+            if int(doc['at']) > timestamp:
                 present_commit = self.client._get_current_commit()
 
                 #3. Get the latest commit at timestamp and retrieve the document in that state
@@ -145,9 +145,9 @@ class terminusDB(Database):
                     self.client.ref = commit
                     doc = self.client.get_document(id)
                     self.client.ref = present_commit
+                    typeResponse = GetType.CURRENT
                 else:
-                    print("No user with that id was found")
-                    return None
+                    return (None, GetType.NO_USER_AT_TIME)
 
             #4. Use the user id without the customer
             doc["userId"] = userId
@@ -155,10 +155,12 @@ class terminusDB(Database):
             #5. Remove the not key/value created by terminus
             doc["attributes"].pop("@id", None)
             doc["attributes"].pop("@type", None)
-            return UserProfile(**doc)
+            profile = UserProfile(**doc)
+
+            return (profile, typeResponse)
+        
         else:
-            print("No user with that id was found")
-            return None
+            return (None, GetType.NO_USER_AT_TIME)
     
     async def get_all_users_state(self):
         if self.client is None:
@@ -191,28 +193,33 @@ class terminusDB(Database):
 
         self.client.insert_document(new_doc, commit_msg=timestamp)
 
-        return profile
+        #WHEN INSERTING DIFFS, THERE IS NO DIFFERENCE IN UPDATE
+        return (profile, PutType.MOST_RECENT)
 
 
     async def get_user_diff(self, userId: str, timestamp: Optional[int] = None) -> Optional[UserProfile]:
         if self.client is None:
             raise Exception("Database connection not established")
+        
+        #0. Get now
+        typeResponse = GetType.TIMESTAMP
+
+        if timestamp is None:
+            typeResponse = GetType.CURRENT
+            timestamp = int(time.time())
+
                 
         #1. Select all diffs where userId = userId
         query = self.API.get_users_diff(userId, timestamp)
         result = self.client.query(query)
 
-        print(result)
-
         diffs = None
 
         if result["bindings"]:
             diffs = result["bindings"]
-        else:
-            print("Cannot find result.")
 
         if not diffs:
-            return None
+            return (None, GetType.NO_USER_AT_TIME)
 
         #2. Go trough the attributes and merge them, from older to most recent
         attributes = {}
@@ -224,11 +231,12 @@ class terminusDB(Database):
 
             attributes = merge_with_past(attributes, diff["attributes"], self.rules)
 
-        #3. TODO: <Optional> Merge all updates that are older than x / more than y and cache (faster restore next time)
+        #3. <Optional> Merge all updates that are older than x / more than y and cache (faster restore next time)
 
         #4. Return as user profile
         latest_timestamp = diffs[-1]["at"]["@value"]  # Last applied timestamp
-        return UserProfile(userId=userId, attributes=attributes, timestamp=latest_timestamp)
+        profile = UserProfile(userId=userId, attributes=attributes, timestamp=latest_timestamp)
+        return (profile, typeResponse)
     
     async def get_all_triples(self):
         pp.pprint(wq().star().execute(self.client))

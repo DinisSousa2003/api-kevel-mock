@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from contextlib import asynccontextmanager
-from imports.models import UserProfile
+from imports.models import UserProfile, PutResponse, GetResponse
+from imports.test_helper import GetType, PutType
 from db.in_memory import InMemoryDB
 from db.XTDB import XTDB
 from db.terminusDB import terminusDB
@@ -9,6 +10,7 @@ from typing import Optional
 from config import config
 from datetime import datetime
 import json
+
 
 db = None
 
@@ -58,7 +60,7 @@ async def populate_from_file_state(n: int = 0, u: int = 100):
                         profile = UserProfile(**payload)
                         ids.add(profile.userId)
 
-                        profile = await db.update_user_state(profile)
+                        profile, _  = await db.update_user_state(profile)
 
                         num += 1
                         if num % (u/10) == 0:
@@ -87,7 +89,7 @@ async def populate_from_file_diff(n: int = 0, u: int = 100):
                         profile = UserProfile(**payload)
                         ids.add(profile.userId)
 
-                        profile = await db.update_user_diff(profile)
+                        profile, _ = await db.update_user_diff(profile)
 
                         num += 1
                         if num % (u/10) == 0:
@@ -104,19 +106,19 @@ async def delete_all():
      await db.erase_all()
      return {"message": "All customers deleted successfully"}
 
-@app.patch("/users/state")
+@app.patch("/users/state", response_model=PutResponse)
 async def update_user(profile: UserProfile):
     """Update or insert a user profile."""
 
-    profile = await db.update_user_state(profile)
-    return {"message": "Profile updated successfully!", "userId": profile.userId, "timestamp": datetime.fromtimestamp(profile.timestamp/1000).strftime('%Y-%m-%d %H:%M:%S')}
+    profile, typeResponse = await db.update_user_state(profile)
+    return PutResponse(profile=profile, response=typeResponse)
 
-@app.patch("/users/diff")
+@app.patch("/users/diff", response_model=PutResponse)
 async def update_user(profile: UserProfile):
     """Update or insert a user profile."""
 
-    profile = await db.update_user_diff(profile)
-    return {"message": "Profile updated successfully!", "userId": profile.userId, "timestamp": datetime.fromtimestamp(profile.timestamp/1000).strftime('%Y-%m-%d %H:%M:%S')}
+    profile, typeResponse = await db.update_user_diff(profile)
+    return PutResponse(profile=profile, response=typeResponse)
 
 @app.get("/users/state/all")
 async def get_all_users():
@@ -141,18 +143,22 @@ async def get_all_users():
     return docs
 
 
-@app.get("/users/state/{userId}", response_model=UserProfile)
+@app.get("/users/state/{userId}", response_model=GetResponse)
 async def get_user(userId: str, timestamp: Optional[int] = None):
     """Retrieve the latest or specific version of a user profile."""
-    profile = await db.get_user_state(userId, timestamp)
-    if not profile:
-        raise HTTPException(status_code=404, detail="No user found")
-    return profile
+    profile, typeResponse = await db.get_user_state(userId, timestamp)
 
-@app.get("/users/diff/{userId}", response_model=UserProfile)
+    # if not profile:
+    #     raise HTTPException(status_code=404, detail="No user found")
+
+    return GetResponse(profile=profile, response=typeResponse)
+
+@app.get("/users/diff/{userId}", response_model=GetResponse)
 async def get_user(userId: str, timestamp: Optional[int] = None):
     """Retrieve the latest or specific version of a user profile."""
-    profile = await db.get_user_diff(userId, timestamp)
-    if not profile:
-        raise HTTPException(status_code=404, detail="No user found")
-    return profile
+    profile, typeResponse = await db.get_user_diff(userId, timestamp)
+
+    # if not profile:
+    #     raise HTTPException(status_code=404, detail="No user found")
+    
+    return GetResponse(profile=profile, response=typeResponse)

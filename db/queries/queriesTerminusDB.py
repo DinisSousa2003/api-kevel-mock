@@ -12,7 +12,7 @@ class TerminusDBAPI():
 
     def get_users_diff(self, customer_id, timestamp):
 
-        (v_customer, v_user_id, v_attributes_id, v_attributes, v_at) = wq().vars('customer', 'user_id', 'attributes_id', 'attributes', 'at')
+        (v_customer, v_attributes_id, v_attributes, v_at) = wq().vars('customer', 'attributes_id', 'attributes', 'at')
 
         query = wq().select(v_attributes, v_at, 
                     wq().woql_and(

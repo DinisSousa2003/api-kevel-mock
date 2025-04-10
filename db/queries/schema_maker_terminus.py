@@ -55,10 +55,6 @@ class MySchema:
             ]
         }
 
-
-        #print(self.schema)
-
-        #TODO: FOR DIFFERENT TYPES OF RULES MIGHT HAVE TO HAVE A DIFFERENT TYPE
         for (name, rule) in rules.items():
             if "bounded-last-unique-concatenation" in rule:
                 self.schema["operations"][1]["class_document"][name] = { "@type" : "Array", "@class" : "xsd:double" }
