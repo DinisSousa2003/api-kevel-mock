@@ -159,7 +159,7 @@ class XTDB(Database):
         #query = QueryState.SELECT_NESTED_ARGUMENTS
 
         async with self.conn.cursor() as cur:
-            await cur.execute(query)
+            await cur.execute(query, prepare=False)
             rows = await cur.fetchall()
             return rows
         
