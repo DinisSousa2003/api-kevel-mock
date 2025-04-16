@@ -148,8 +148,8 @@ async def get_user(userId: str, timestamp: Optional[int] = None):
     """Retrieve the latest or specific version of a user profile."""
     profile, typeResponse = await db.get_user_state(userId, timestamp)
 
-    # if not profile:
-    #     raise HTTPException(status_code=404, detail="No user found")
+    if not profile:
+        raise HTTPException(status_code=404, detail="No user found")
 
     return GetResponse(profile=profile, response=typeResponse)
 
@@ -158,7 +158,7 @@ async def get_user(userId: str, timestamp: Optional[int] = None):
     """Retrieve the latest or specific version of a user profile."""
     profile, typeResponse = await db.get_user_diff(userId, timestamp)
 
-    # if not profile:
-    #     raise HTTPException(status_code=404, detail="No user found")
+    if not profile:
+        raise HTTPException(status_code=404, detail="No user found")
     
     return GetResponse(profile=profile, response=typeResponse)

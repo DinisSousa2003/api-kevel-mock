@@ -46,7 +46,7 @@ def put_requests(endpoint, number_ops, user_id_set, condition, ops_per_second):
                     data = response.json()
                     response_type = data.get("response", "UNKNOWN")
 
-                    print(f"[PUT] ID: {user_id} | Status: {PutType(response_type)} | Time: {elapsed:.4f}s")
+                    #print(f"[PUT] ID: {user_id} | Status: {PutType(response_type)} | Time: {elapsed:.4f}s")
 
                     put_request_times[response_type].append(elapsed)
 
@@ -78,16 +78,20 @@ def get_requests(endpoint, number_ops, user_id_set, condition, pct_get_now, ops_
         response = requests.get(url, headers=headers, params=params)
         elapsed = response.elapsed.total_seconds()
 
-        #STORE INFORMATION OVER THE TIME FOR THE GIVEN RESPONSE TYPE
-        data = response.json()
-        response_type = data.get("response", "UNKNOWN")
+        if response.status_code == 404:
+            response_type = GetType.NO_USER_AT_TIME
+            #print(f"[GET] ID: {user_id} | Status: {response_type} | Time: {elapsed:.4f}s")
 
-        print(f"[GET] ID: {user_id} | Status: {GetType(response_type)} | Time: {elapsed:.4f}s")
+        else:
+            #STORE INFORMATION OVER THE TIME FOR THE GIVEN RESPONSE TYPE
+            data = response.json()
+            response_type = data.get("response", "UNKNOWN")
+            #print(f"[GET] ID: {user_id} | Status: {GetType(response_type)} | Time: {elapsed:.4f}s")
 
 
         n += 1
 
-        get_request_times[response].append(elapsed)
+        get_request_times[response_type].append(elapsed)
         sleep_time = max(0, (1 / ops_per_second) - elapsed)
         time.sleep(sleep_time)
 
