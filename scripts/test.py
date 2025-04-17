@@ -1,3 +1,10 @@
+import sys
+import os
+
+# Add the project root to sys.path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+
 import json
 import requests
 import random
@@ -5,8 +12,6 @@ import time
 import argparse
 from threading import Thread, Condition
 from collections import defaultdict
-import sys
-sys.path.append("..")
 from imports.test_helper import GetType, PutType
 
 BASE_URL = "http://127.0.0.1:8000"
@@ -28,12 +33,12 @@ def random_timestamp(start, end):
 def put_requests(endpoint, number_ops, user_id_set, condition, ops_per_second):
     headers = {'Content-Type': 'application/json'}
     n = 0
-    with open(f'../dataset/updates-0.jsonl', "r") as updates:
+    with open(f'dataset/updates-0.jsonl', "r") as updates:
             for line in updates:
                     payload = json.loads(line.strip())
                     user_id = payload.get("userId")
 
-                    response = requests.request("PATCH", endpoint, headers=headers, json=payload)
+                    response = requests.patch(endpoint, headers=headers, json=payload)
                     elapsed = response.elapsed.total_seconds()
 
                     #SEND THE USER ID TO THE GET PROCESS SO IT CAN GET THE IDS
@@ -69,7 +74,7 @@ def get_requests(endpoint, number_ops, user_id_set, condition, pct_get_now, ops_
             user_id = random.choice(list(user_id_set))
                 
         is_now = random.randint(1, 100) <= pct_get_now
-        url = f"{endpoint}{user_id}"
+        url = f"{endpoint}/{user_id}"
         params = {}
 
         if not is_now:
@@ -120,7 +125,7 @@ if __name__ == "__main__":
 
     MODE, NUM_OPS, PCT_GET, PCT_NOW, RATE = args.mode, args.num_ops, args.pct_get, args.pct_get_now, args.ops_per_second
 
-    USER_ENDPOINT = f"{BASE_URL}/users/{MODE}/"
+    USER_ENDPOINT = f"{BASE_URL}/users/{MODE}"
 
     total_puts = NUM_OPS * (100 - PCT_GET) // 100
     total_gets = NUM_OPS - total_puts

@@ -6,14 +6,16 @@ CONTAINER_NAME="postgres"
 VOLUME_NAME="pgdata"
 IMAGE_NAME="postgres:17.4"
 
+# Get the directory of this script
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# Load environment variables from the parent directory's .env file
 set -o allexport
-source ../.env
+source "$SCRIPT_DIR/../.env"
 set +o allexport
 
 docker rm -f "$CONTAINER_NAME"
-
 docker volume rm "$VOLUME_NAME"
-
 docker volume create "$VOLUME_NAME"
 
 echo "Creating new PostgreSQL container..."

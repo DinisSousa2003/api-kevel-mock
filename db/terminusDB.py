@@ -23,7 +23,7 @@ class terminusDB(Database):
         load_dotenv('../.env')
 
         self.db_url = db_url
-        self.client = None
+        self.get_client = None
         self.rules = Rules().get_all_rules()
         self.schema = MySchema(rules=self.rules)
         self.db_name = None
@@ -50,13 +50,23 @@ class terminusDB(Database):
         self.API = TerminusDBAPI(self.db_name, self.auth)
 
         try:
-            self.client = Client(DB_PARAMS["scheme"] + "://" + DB_PARAMS["client"])
-            self.client.connect(key="root", team="admin", user="admin", db=self.db_name)
+            self.get_client = Client(DB_PARAMS["scheme"] + "://" + DB_PARAMS["client"])
+            self.get_client.connect(key="root", team="admin", user="admin", db=self.db_name)
             print("Connected successfully.")
 
-            self.client.optimize(f'admin/{self.db_name}') # optimise database branch (here main)
-            self.client.optimize(f'admin/{self.db_name}/_meta') # optimise the repository graph (actually creates a squashed flat layer)
-            self.client.optimize(f'admin/{self.db_name}/local/_commits') # commit graph is optimised
+            self.get_client.optimize(f'admin/{self.db_name}') # optimise database branch (here main)
+            self.get_client.optimize(f'admin/{self.db_name}/_meta') # optimise the repository graph (actually creates a squashed flat layer)
+            self.get_client.optimize(f'admin/{self.db_name}/local/_commits') # commit graph is optimised
+
+            self.update_client = Client(DB_PARAMS["scheme"] + "://" + DB_PARAMS["client"])
+            self.update_client.connect(key="root", team="admin", user="admin", db=self.db_name)
+            print("Connected successfully.")
+
+            self.update_client.optimize(f'admin/{self.db_name}') # optimise database branch (here main)
+            self.update_client.optimize(f'admin/{self.db_name}/_meta') # optimise the repository graph (actually creates a squashed flat layer)
+            self.update_client.optimize(f'admin/{self.db_name}/local/_commits') # commit graph is optimised
+
+            
 
             #Check if schema has been posted, if not post
             schema = self.API.get_schema()
@@ -70,23 +80,26 @@ class terminusDB(Database):
 ##########################SAME FOR DIFF AND STATE##############################################
 
     async def erase_all(self):
-        if self.client is None:
+        if self.get_client is None:
             raise Exception("Database connection not established")
 
-        docs = self.client.get_all_documents()
+        docs = self.get_client.get_all_documents()
         for doc in docs:
-            self.client.delete_document(doc["@id"])
+            self.get_client.delete_document(doc["@id"])
 
 ##########################STATE BASED FUNCTIONS#################################################
 
     async def update_user_state(self, profile: UserProfile):
 
-        if self.client is None:
+        if self.update_client is None:
             raise Exception("Database connection not established")
 
-        timestamp = profile.timestamp
+        timestamp = profile.timestamp // 1000
         id = "Customer" + "/" + profile.userId
         attributes = profile.attributes
+
+        if timestamp > int(time.time()):
+                return (None, PutType.NO_UPDATE)
 
         if not attributes:
             return (None, PutType.NO_UPDATE)
@@ -94,8 +107,8 @@ class terminusDB(Database):
         #1. Get the most recent valid attributes (assume updates are in order)
         past = {}
         doc = None
-        if self.client.has_doc(id):
-            doc = self.client.get_document(id)
+        if self.update_client.has_doc(id):
+            doc = self.update_client.get_document(id)
 
             if int(doc["at"]) > timestamp:
                 return (None, PutType.PAST)
@@ -110,42 +123,41 @@ class terminusDB(Database):
         new_doc["attributes"] = merge_with_past(past, attributes, self.rules)
     
         if doc:
-            self.client.update_document(new_doc, commit_msg=timestamp)
+            self.update_client.update_document(new_doc, commit_msg=timestamp)
             return (profile, PutType.MOST_RECENT)
 
-        self.client.insert_document(new_doc, commit_msg=timestamp)
+        self.update_client.insert_document(new_doc, commit_msg=timestamp)
         return (profile, PutType.MOST_RECENT)
         
 
     async def get_user_state(self, userId: str, timestamp: Optional[int] = None) -> Optional[UserProfile]:
 
-        if self.client is None:
+        if self.get_client is None:
             raise Exception("Database connection not established")
 
         id = "Customer" + "/" + userId
 
+        if timestamp:
+            timestamp = timestamp // 1000
+
         #1. Get the current state of the user
-        if self.client.has_doc(id):
-            doc = self.client.get_document(id)
+        if self.get_client.has_doc(id):
+            doc = self.get_client.get_document(id)
 
             typeResponse = GetType.CURRENT
 
-            #1.1. Get now
-            if timestamp is None:
-                timestamp = int(time.time())
-
             #2. If the current state is in the future from the timestamp given, we need to search in the history
-            if int(doc['at']) > timestamp:
-                present_commit = self.client._get_current_commit()
+            if timestamp and int(doc['at']) > timestamp:
+                present_commit = self.get_client._get_current_commit()
 
                 #3. Get the latest commit at timestamp and retrieve the document in that state
                 commit = self.API.get_latest_state(id, timestamp)
 
                 if commit:
-                    self.client.ref = commit
-                    doc = self.client.get_document(id)
-                    self.client.ref = present_commit
-                    typeResponse = GetType.CURRENT
+                    self.get_client.ref = commit
+                    doc = self.get_client.get_document(id)
+                    self.get_client.ref = present_commit
+                    typeResponse = GetType.TIMESTAMP
                 else:
                     return (None, GetType.NO_USER_AT_TIME)
 
@@ -163,10 +175,10 @@ class terminusDB(Database):
             return (None, GetType.NO_USER_AT_TIME)
     
     async def get_all_users_state(self):
-        if self.client is None:
+        if self.get_client is None:
             raise Exception("Database connection not established")
 
-        docs = self.client.get_all_documents()
+        docs = self.get_client.get_all_documents()
         return docs
     
 
@@ -174,11 +186,11 @@ class terminusDB(Database):
     
     async def update_user_diff(self, profile: UserProfile):
 
-        if self.client is None:
+        if self.get_client is None:
             raise Exception("Database connection not established")
         
         #1. Create a unique identifier for the change
-        timestamp = profile.timestamp
+        timestamp = profile.timestamp // 1000
         userId = profile.userId
         attributes = profile.attributes
         id = "Customer" + "/" + str(uuid.uuid4())
@@ -191,14 +203,14 @@ class terminusDB(Database):
         new_doc["at"] = timestamp
         new_doc["attributes"] = attributes
 
-        self.client.insert_document(new_doc, commit_msg=timestamp)
+        self.get_client.insert_document(new_doc, commit_msg=timestamp)
 
         #WHEN INSERTING DIFFS, THERE IS NO DIFFERENCE IN UPDATE
         return (profile, PutType.MOST_RECENT)
 
 
     async def get_user_diff(self, userId: str, timestamp: Optional[int] = None) -> Optional[UserProfile]:
-        if self.client is None:
+        if self.get_client is None:
             raise Exception("Database connection not established")
         
         #0. Get now
@@ -211,7 +223,7 @@ class terminusDB(Database):
                 
         #1. Select all diffs where userId = userId
         query = self.API.get_users_diff(userId, timestamp)
-        result = self.client.query(query)
+        result = self.get_client.query(query)
 
         diffs = None
 
@@ -239,5 +251,5 @@ class terminusDB(Database):
         return (profile, typeResponse)
     
     async def get_all_triples(self):
-        pp.pprint(wq().star().execute(self.client))
+        pp.pprint(wq().star().execute(self.get_client))
         return

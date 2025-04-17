@@ -3,3 +3,6 @@ __pycache__
 .clj-kondo
 .lsp
 dataset
+config.json
+*.TDB
+.docker
