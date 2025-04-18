@@ -41,8 +41,7 @@ class PostgreSQL(Database):
         try:
             self.conn = await pg.AsyncConnection.connect(**DB_PARAMS, row_factory=dict_row)
             print("Connected to Postrges database successfully.")
-            self.conn.adapters.register_dumper(str, pg.types.string.StrDumperVarchar)
-
+            
             #CREATE STATE AND DIFF TABLE, IF THEY DON'T EXIST
             #await self.clear_tables()
             await self.create_state_customers_table()
@@ -190,6 +189,18 @@ class PostgreSQL(Database):
         async with self.conn.cursor() as cur:
             await cur.execute(query)
             rows = await cur.fetchall()
+            return rows
+        
+    async def check_size_state(self):
+        if self.conn is None:
+            raise Exception("Database connection not established")
+
+        query = QueryState.CHECK_SIZE_STATE
+
+        async with self.conn.cursor() as cur:
+            await cur.execute(query)
+            rows = await cur.fetchall()
+            print(rows)
             return rows
     
 

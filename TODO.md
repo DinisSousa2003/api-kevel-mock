@@ -1,0 +1,2 @@
+- Postgres is not persisting (lose the data on reload)
+- Check how to get the space occupied on terminusdb and xtdb2

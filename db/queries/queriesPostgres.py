@@ -25,8 +25,10 @@ class QueryState():
                     ORDER BY at DESC 
                     LIMIT 1;"""
     
-    SELECT_ALL_CURRENT = """SELECT * FROM customer_state
-                    WHERE at <= NOW();"""
+    SELECT_ALL_CURRENT = """SELECT DISTINCT ON (id) *
+                            FROM customer_state
+                            WHERE at <= NOW()
+                            ORDER BY id, at DESC;"""
 
     
     SELECT_USER_BT_VT_AND_NOW = """SELECT * FROM customer_state
@@ -38,6 +40,18 @@ class QueryState():
                         ON CONFLICT (id, at)
                         DO UPDATE SET 
                         attributes = EXCLUDED.attributes"""
+
+    CHECK_SIZE_STATE = """SELECT
+                        relname AS name,
+                        pg_size_pretty(pg_relation_size(relid)) AS size
+                    FROM pg_catalog.pg_statio_user_tables
+                    WHERE relname = 'customer_state'
+                    UNION ALL
+                    SELECT
+                        indexrelname AS name,
+                        pg_size_pretty(pg_relation_size(indexrelid)) AS size
+                    FROM pg_catalog.pg_stat_user_indexes
+                    WHERE relname = 'customer_state';"""
     
 
     

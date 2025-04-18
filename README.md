@@ -15,9 +15,11 @@
 python3 full-test.py <terminus|xtdb2|postgres>
 ```
 
-## 
+## Characteristics
 Updates to the past
 Updates to the future (past now)
 Query present
 Query past
 Query future
+Immutable
+Bitemporal

@@ -184,7 +184,7 @@ class XTDB(Database):
         
         return (profile, PutType.MOST_RECENT)
 
-    async def get_user_diff(self, userId: str, timestamp: Optional[int] = None) -> tuple[UserProfile, GetType]:
+    async def get_user_diff(self, userId: str, timestamp: Optional[int] = None):
 
         if self.conn is None:
             raise Exception("Database connection not established")

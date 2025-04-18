@@ -24,6 +24,7 @@ docker run -d \
   -e POSTGRES_PASSWORD="$KEY" \
   -e POSTGRES_USER="$USERNAME" \
   -e POSTGRES_DB="postgres" \
+  -e PGDATA="/var/lib/postgresql/data" \
   -p 5432:5432 \
   -v "$VOLUME_NAME":/var/lib/postgresql/data \
   "$IMAGE_NAME"

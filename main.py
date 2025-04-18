@@ -53,8 +53,8 @@ async def populate_from_file_state(n: int = 0, u: int = 100):
     for i in range(0, n+1):
         print("Reading file", i)
 
-        #with open(f'dataset/updates-{i}.jsonl', "r") as updates:
-        with open(f'dataset/small-test.jsonl', "r") as updates:
+        with open(f'dataset/updates-{i}.jsonl', "r") as updates:
+        #with open(f'dataset/small-test.jsonl', "r") as updates:
                 for line in updates:
                         payload = json.loads(line.strip())  # Convert JSON string to dictionary
                         profile = UserProfile(**payload)
@@ -141,6 +141,26 @@ async def get_all_users():
     if not docs:
         raise HTTPException(status_code=404, detail="No user found")
     return docs
+
+@app.get("/users/diff/db/size")
+async def get_size():
+    """Retrieve the size of the database"""
+    response = await db.check_size_diff()
+
+    if not response:
+        raise HTTPException(status_code=404, detail="No user found")
+    
+    return response
+
+@app.get("/users/state/db/size")
+async def get_size():
+    """Retrieve the size of the database"""
+    response = await db.check_size_state()
+
+    if not response:
+        raise HTTPException(status_code=404, detail="No user found")
+    
+    return response
 
 
 @app.get("/users/state/{userId}", response_model=GetResponse)
