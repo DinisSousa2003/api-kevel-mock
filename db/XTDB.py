@@ -1,4 +1,5 @@
 import psycopg as pg
+from psycopg.types.json import Jsonb
 from psycopg.rows import dict_row
 from imports.models import UserProfile
 from imports.test_helper import GetType, PutType
@@ -57,8 +58,6 @@ class XTDB(Database):
         dt = datetime.fromtimestamp(profile.timestamp/1000, tz=timezone.utc) #ms to seconds
         id = profile.userId
         attributes = profile.attributes
-        params = (id, dt)
-        params2 = (dt, id)
 
         if not attributes:
             return (None, PutType.NO_UPDATE)
@@ -68,7 +67,7 @@ class XTDB(Database):
 
         async with self.conn.cursor() as cur:
             query = QueryState.SELECT_ALL_CURRENT_ATTR_VT
-            await cur.execute(query, params2, prepare=False)
+            await cur.execute(query, (dt, id), prepare=False)
             row = await cur.fetchone()
             if row:
                 past = row['attributes']
@@ -81,24 +80,23 @@ class XTDB(Database):
         #3. Get all future states
         async with self.conn.cursor() as cur:
             query = QueryState.SELECT_USER_BT_VT_AND_NOW
-            await cur.execute(query, params, prepare=False)
+            await cur.execute(query, (id, dt), prepare=False)
             futures = await cur.fetchall()
 
         #4. Update is not in the past  
         if not futures:
-            query = QueryState.INSERT_WITH_TIME(new_attributes)
+            query = QueryState.INSERT_WITH_TIME
             async with self.conn.cursor() as cur:
-                await cur.execute(query, params, prepare=False)
+                await cur.execute(query, (id, Jsonb(new_attributes), dt), prepare=False)
             
             return (profile, PutType.MOST_RECENT)
 
         #4. Update is in the past
 
         #Update from timestamp to the first _valid_to
-        query = QueryState.INSERT_WITH_TIME_PERIOD(new_attributes)
-        params3 = params + (futures[0]['_valid_from'], )
+        query = QueryState.INSERT_WITH_TIME_PERIOD
         async with self.conn.cursor() as cur:
-            await cur.execute(query, params3, prepare=False)
+            await cur.execute(query, (id, Jsonb(new_attributes), dt, futures[0]['_valid_from']), prepare=False)
 
         #5. Update all future states
         for future in futures:
@@ -107,13 +105,13 @@ class XTDB(Database):
             #TODO: CAN I DO THIS IN A BATCH (?)
             #TODO: CAN I USE JSONB LIKE I DO IN POSTGRES?
             if future['_valid_to']:
-                query = QueryState.INSERT_WITH_TIME_PERIOD(future['attributes'])
+                query = QueryState.INSERT_WITH_TIME_PERIOD
                 async with self.conn.cursor() as cur:
-                    await cur.execute(query, (id, future['_valid_from'], future['_valid_to']), prepare=False)
+                    await cur.execute(query, (id, Jsonb(future['attributes']), future['_valid_from'], future['_valid_to']), prepare=False)
             else:
-                query = QueryState.INSERT_WITH_TIME(future['attributes'])
+                query = QueryState.INSERT_WITH_TIME
                 async with self.conn.cursor() as cur:
-                    await cur.execute(query, (id, future['_valid_from']), prepare=False)
+                    await cur.execute(query, (id, Jsonb(future['attributes']), future['_valid_from']), prepare=False)
         
         
         return (profile, PutType.PAST)
@@ -177,10 +175,10 @@ class XTDB(Database):
         attributes = profile.attributes
         id = uuid.uuid4()
 
-        query = QueryDiff.INSERT_UPDATE(attributes)
+        query = QueryDiff.INSERT_UPDATE
 
         async with self.conn.cursor() as cur:
-                    await cur.execute(query, (id, userId, dt), prepare=False)
+                    await cur.execute(query, (id, userId, Jsonb(attributes), dt), prepare=False)
         
         return (profile, PutType.MOST_RECENT)
 

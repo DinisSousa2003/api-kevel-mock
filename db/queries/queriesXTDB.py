@@ -42,11 +42,9 @@ class QueryState():
     def PATCH_WITH_TIME(attributes):
         return f"""PATCH INTO customer FOR VALID_TIME FROM %s RECORDS {{_id: %s, attributes: {json.dumps(attributes)}}};"""
 
-    def INSERT_WITH_TIME(attributes):
-        return f"""INSERT INTO customer RECORDS {{_id: %s, attributes: {json.dumps(attributes)}, _valid_from: %s}};"""
+    INSERT_WITH_TIME = """INSERT INTO customer RECORDS {_id: %s, attributes: %s, _valid_from: %s};"""
     
-    def INSERT_WITH_TIME_PERIOD(attributes):
-        return f"""INSERT INTO customer RECORDS {{_id: %s, attributes: {json.dumps(attributes)}, _valid_from: %s, _valid_to: %s}};"""
+    INSERT_WITH_TIME_PERIOD = """INSERT INTO customer RECORDS {_id: %s, attributes: %s, _valid_from: %s, _valid_to: %s};"""
 
     # def PATCH_MOST_RECENT(attr, value):
     #     return f"""PATCH INTO customer FOR VALID_TIME FROM %s RECORDS {{_id: %s, "{attr}": {value} }};"""
@@ -57,8 +55,7 @@ class QueryState():
     
 class QueryDiff():
     
-    def INSERT_UPDATE(attributes):
-        return f"""INSERT INTO customer RECORDS {{_id: %s, userId: %s, attributes: {json.dumps(attributes)}, _valid_from: %s}}"""
+    INSERT_UPDATE = """INSERT INTO customer RECORDS {_id: %s, userId: %s, attributes: %s, _valid_from: %s}"""
     
     SELECT_DIFFS_USER_UP_TO_VT = """SELECT attributes, _valid_from FROM customer
                     FOR ALL VALID_TIME
