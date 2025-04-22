@@ -87,6 +87,21 @@ class terminusDB(Database):
         for doc in docs:
             self.get_client.delete_document(doc["@id"])
 
+    async def check_size(self):
+        if self.get_client is None:
+            raise Exception("Database connection not established")
+        
+        query = self.API.get_size(self.db_name)
+        result = self.get_client.query(query)
+
+        return result
+    
+    async def check_size_state(self):
+        return self.check_size()
+    
+    async def check_size_diff(self):
+        return self.check_size()
+
 ##########################STATE BASED FUNCTIONS#################################################
 
     async def update_user_state(self, profile: UserProfile):

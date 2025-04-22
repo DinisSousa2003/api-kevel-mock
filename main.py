@@ -111,6 +111,10 @@ async def update_user(profile: UserProfile):
     """Update or insert a user profile."""
 
     profile, typeResponse = await db.update_user_state(profile)
+
+    if not profile:
+        raise HTTPException(status_code=404, detail="Unable to update")
+
     return PutResponse(profile=profile, response=typeResponse)
 
 @app.patch("/users/diff", response_model=PutResponse)
@@ -118,6 +122,10 @@ async def update_user(profile: UserProfile):
     """Update or insert a user profile."""
 
     profile, typeResponse = await db.update_user_diff(profile)
+
+    if not profile:
+        raise HTTPException(status_code=404, detail="Unable to update")
+
     return PutResponse(profile=profile, response=typeResponse)
 
 @app.get("/users/state/all")

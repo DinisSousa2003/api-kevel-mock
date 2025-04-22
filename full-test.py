@@ -66,8 +66,8 @@ def main():
             sys.exit(1)
 
         print("[INFO] Running test script...")
-        #MODE, NUM_OPS, PCT_GET, PCT_NOW, RATE
-        subprocess.run(["python", test_script, "state", "100", "90", "95", "1000"], check=True)
+        #MODE, TOTAL_TIME (minutes), PCT_GET, PCT_NOW, RATE
+        subprocess.run(["python", test_script, "state", "0.5", "30", "98", "5"], check=True)
 
     finally:
         # Make sure the server stops after testing

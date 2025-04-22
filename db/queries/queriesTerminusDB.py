@@ -33,6 +33,16 @@ class TerminusDBAPI():
                 )
     
         return query
+    
+    def get_size(self, db_name):
+        (v_size) = wq().vars('size')
+
+        query = wq().select(v_size,
+                    wq().size(f"admin/{db_name}", v_size)
+                )
+        
+        return query
+
 
     def get_schema(self):
         url = f"http://127.0.0.1:6363/api/schema/admin/{self.db_name}"

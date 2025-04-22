@@ -79,3 +79,15 @@ class QueryDiff():
     SELECT_DIFFS_UP_TO_VT = """SELECT attributes, at FROM customer_diff
                     WHERE userId = %s AND at <= %s
                     ORDER BY at;"""""
+
+    CHECK_SIZE_DIFF = """SELECT
+                        relname AS name,
+                        pg_size_pretty(pg_relation_size(relid)) AS size
+                    FROM pg_catalog.pg_statio_user_tables
+                    WHERE relname = 'customer_diff'
+                    UNION ALL
+                    SELECT
+                        indexrelname AS name,
+                        pg_size_pretty(pg_relation_size(indexrelid)) AS size
+                    FROM pg_catalog.pg_stat_user_indexes
+                    WHERE relname = 'customer_diff';"""

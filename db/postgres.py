@@ -266,5 +266,16 @@ class PostgreSQL(Database):
         latest_timestamp = diffs[-1]["at"]  # Last applied timestamp
         profile = UserProfile(userId=userId, attributes=attributes, timestamp=int(latest_timestamp.timestamp()))
         return (profile, typeResponse)
+    
+    async def check_size_diff(self):
+        if self.conn is None:
+            raise Exception("Database connection not established")
+
+        query = QueryDiff.CHECK_SIZE_DIFF
+
+        async with self.conn.cursor() as cur:
+            await cur.execute(query)
+            rows = await cur.fetchall()
+            return rows
         
             
