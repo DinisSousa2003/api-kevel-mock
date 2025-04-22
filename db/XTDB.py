@@ -1,6 +1,8 @@
 import psycopg as pg
 from psycopg.types.json import Jsonb
 from psycopg.rows import dict_row
+from psycopg.errors import ProtocolViolation
+from functools import wraps
 from imports.models import UserProfile
 from imports.test_helper import GetType, PutType
 from imports.rules import Rules
@@ -47,6 +49,39 @@ class XTDB(Database):
         async with self.conn.cursor() as cur:
             await cur.execute(query)
 
+            query = QueryDiff.ERASE_ALL
+            await cur.execute(query)
+
+    def safe_execute(func):
+        @wraps(func)
+        async def wrapper(self, *args, **kwargs):
+            try:
+                return await func(self, *args, **kwargs)
+            except ProtocolViolation as e:
+                print(f"[safe_execute] ProtocolViolation detected: {e}")
+                print("[safe_execute] Deallocating all prepared statements...")
+                async with self.conn.cursor() as cur:
+                    await cur.execute("DEALLOCATE ALL")
+                return await func(self, *args, **kwargs)
+        return wrapper
+    
+    @safe_execute
+    async def _execute_query(self, query, params):
+        async with self.conn.cursor() as cur:
+            await cur.execute(query, params)
+
+    @safe_execute
+    async def _execute_fetchone(self, query, params):
+        async with self.conn.cursor() as cur:
+            await cur.execute(query, params)
+            return await cur.fetchone()
+
+    @safe_execute
+    async def _execute_fetchall(self, query, params):
+        async with self.conn.cursor() as cur:
+            await cur.execute(query, params)
+            return await cur.fetchall()
+
 
 ##########################STATE BASED FUNCTIONS#################################################
 
@@ -65,12 +100,9 @@ class XTDB(Database):
         #1. Get most recent valid attributes
         past = {}
 
-        async with self.conn.cursor() as cur:
-            query = QueryState.SELECT_ALL_CURRENT_ATTR_VT
-            await cur.execute(query, (dt, id), prepare=False)
-            row = await cur.fetchone()
-            if row:
-                past = row['attributes']
+        row = await self._execute_fetchone(QueryState.SELECT_ALL_CURRENT_ATTR_VT, (dt, id))
+        if row:
+            past = row['attributes']
 
 
         #2. Update attributes for given time
@@ -78,41 +110,35 @@ class XTDB(Database):
 
         
         #3. Get all future states
-        async with self.conn.cursor() as cur:
-            query = QueryState.SELECT_USER_BT_VT_AND_NOW
-            await cur.execute(query, (id, dt), prepare=False)
-            futures = await cur.fetchall()
+        futures = await self._execute_fetchall(QueryState.SELECT_USER_BT_VT_AND_NOW, (id, dt))
 
         #4. Update is not in the past  
         if not futures:
-            query = QueryState.INSERT_WITH_TIME
-            async with self.conn.cursor() as cur:
-                await cur.execute(query, (id, Jsonb(new_attributes), dt), prepare=False)
-            
+            await self._execute_query(QueryState.INSERT_WITH_TIME, (id, Jsonb(new_attributes), dt))
             return (profile, PutType.MOST_RECENT)
 
         #4. Update is in the past
 
         #Update from timestamp to the first _valid_to
-        query = QueryState.INSERT_WITH_TIME_PERIOD
-        async with self.conn.cursor() as cur:
-            await cur.execute(query, (id, Jsonb(new_attributes), dt, futures[0]['_valid_from']), prepare=False)
+        await self._execute_query(
+            QueryState.INSERT_WITH_TIME_PERIOD,
+            (id, Jsonb(new_attributes), dt, futures[0]['_valid_from'])
+        )
 
         #5. Update all future states
         for future in futures:
             future = merge_with_future(future, attributes, self.rules)
 
-            #TODO: CAN I DO THIS IN A BATCH (?)
-            #TODO: CAN I USE JSONB LIKE I DO IN POSTGRES?
             if future['_valid_to']:
-                query = QueryState.INSERT_WITH_TIME_PERIOD
-                async with self.conn.cursor() as cur:
-                    await cur.execute(query, (id, Jsonb(future['attributes']), future['_valid_from'], future['_valid_to']), prepare=False)
+                await self._execute_query(
+                    QueryState.INSERT_WITH_TIME_PERIOD,
+                    (id, Jsonb(future['attributes']), future['_valid_from'], future['_valid_to'])
+                )
             else:
-                query = QueryState.INSERT_WITH_TIME
-                async with self.conn.cursor() as cur:
-                    await cur.execute(query, (id, Jsonb(future['attributes']), future['_valid_from']), prepare=False)
-        
+                await self._execute_query(
+                    QueryState.INSERT_WITH_TIME,
+                    (id, Jsonb(future['attributes']), future['_valid_from'])
+                )
         
         return (profile, PutType.PAST)
 
@@ -125,7 +151,6 @@ class XTDB(Database):
 
         if timestamp: 
             query = QueryState.SELECT_USER_WITH_VT
-            
             dt = datetime.fromtimestamp(timestamp/1000, tz=timezone.utc) #ms to seconds
             params = (dt, userId)
             typeResponse = GetType.TIMESTAMP
@@ -134,12 +159,10 @@ class XTDB(Database):
             query = QueryState.SELECT_USER
             params = (userId,)
         
-        async with self.conn.cursor() as cur:
-            await cur.execute(query, params, prepare=False)
-            row = await cur.fetchone()
-            if row:
-                profile = UserProfile(userId=row['_id'], attributes=row['attributes'], timestamp=int(row['_valid_from'].timestamp()))
-                return (profile, typeResponse)
+        row = await self._execute_fetchone(query, params)
+        if row:
+            profile = UserProfile(userId=row['_id'], attributes=row['attributes'], timestamp=int(row['_valid_from'].timestamp()))
+            return (profile, typeResponse)
             
         return (None, GetType.NO_USER_AT_TIME)
         
@@ -148,18 +171,10 @@ class XTDB(Database):
         if self.conn is None:
             raise Exception("Database connection not established")
 
-        query = QueryState.SELECT_ALL_CURRENT
-
         query = QueryState.SELECT_ALL_VALID_WITH_TIMES
-        
-        #query = QueryState.SELECT_ALL_WITH_TIMES
+        rows = await self._execute_fetchall(query)
 
-        #query = QueryState.SELECT_NESTED_ARGUMENTS
-
-        async with self.conn.cursor() as cur:
-            await cur.execute(query, prepare=False)
-            rows = await cur.fetchall()
-            return rows
+        return rows
         
 
 ##########################DIFF BASED FUNCTIONS#################################################
@@ -175,10 +190,8 @@ class XTDB(Database):
         attributes = profile.attributes
         id = uuid.uuid4()
 
-        query = QueryDiff.INSERT_UPDATE
-
-        async with self.conn.cursor() as cur:
-                    await cur.execute(query, (id, userId, Jsonb(attributes), dt), prepare=False)
+        query = QueryDiff.INSERT_WITH_TIME
+        await self._execute_query(query, (id, userId, Jsonb(attributes), dt))
         
         return (profile, PutType.MOST_RECENT)
 
@@ -192,7 +205,6 @@ class XTDB(Database):
         #1. Select all diffs where userId = userId
         if timestamp: 
             query = QueryDiff.SELECT_DIFFS_USER_UP_TO_VT
-            
             dt = datetime.fromtimestamp(timestamp/1000, tz=timezone.utc) #ms to seconds
             params = (userId, dt)
             typeResponse = GetType.TIMESTAMP
@@ -201,9 +213,7 @@ class XTDB(Database):
             query = QueryDiff.SELECT_DIFFS_USER
             params = (userId,)
 
-        async with self.conn.cursor() as cur:
-            await cur.execute(query, params, prepare=False)
-            diffs = await cur.fetchall()
+        diffs = await self._execute_fetchall(query, params)
 
         if not diffs:
             return (None, GetType.NO_USER_AT_TIME)
@@ -230,10 +240,7 @@ class XTDB(Database):
         query = QueryDiff.SELECT_ALL_USERS
 
         #TODO: THIS IS IN THE FORMAT [{userId: idOne}, {userId: idTwo}, ....]
-
-        async with self.conn.cursor(row_factory=None) as cur:
-            await cur.execute(query, prepare=False)
-            results = await cur.fetchall()
+        results = await self._execute_fetchall(query)
 
         print(results)
 

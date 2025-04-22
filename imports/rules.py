@@ -23,3 +23,15 @@ class Rules:
     
     def get_rule_by_atrr(self, attr: str) -> str:
         return self._rules[attr]
+
+    def mock_attributes(self):
+        update = dict()
+        for name, rule in self._rules.items():
+            if "bounded-last-unique-concatenation" in rule:
+                update[name] = [1.0]
+            elif rule == "or":
+                update[name] = True
+            else:
+                update[name] = 1.0
+
+        return update
