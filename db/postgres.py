@@ -200,7 +200,6 @@ class PostgreSQL(Database):
         async with self.conn.cursor() as cur:
             await cur.execute(query)
             rows = await cur.fetchall()
-            print(rows)
             return rows
     
 

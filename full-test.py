@@ -47,7 +47,7 @@ def main():
     print(f"[INFO] Running Docker setup: {docker_script}")
     subprocess.run(["bash", docker_script], check=True)
 
-    time.sleep(15)
+    time.sleep(20)
 
     #4. Run the application uvicorn main:app --reload
     print("[INFO] Starting FastAPI server with Uvicorn...")
@@ -67,7 +67,7 @@ def main():
 
         print("[INFO] Running test script...")
         #MODE, NUM_OPS, PCT_GET, PCT_NOW, RATE
-        subprocess.run(["python", test_script, "state", "100", "80", "50", "100"], check=True)
+        subprocess.run(["python", test_script, "state", "100", "90", "95", "1000"], check=True)
 
     finally:
         # Make sure the server stops after testing

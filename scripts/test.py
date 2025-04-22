@@ -144,7 +144,16 @@ if __name__ == "__main__":
 
     print("All operations completed.")
 
-    print("=== PUT Request Timing Summary ===")
+    #Get size occupied
+
+    # url = USER_ENDPOINT + "/db/size"
+    # response = requests.get(url)
+
+    # print("\n=== Size Occupied Summary ===")
+    # print(response.json())
+    
+
+    print("\n=== PUT Request Timing Summary ===")
     for status, times in put_request_times.items():
         avg = sum(times) / len(times) if times else 0
         print(f"Status {PutType(status)}: {len(times)} requests, Avg Time: {avg:.4f}s")
