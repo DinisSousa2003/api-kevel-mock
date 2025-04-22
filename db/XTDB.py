@@ -34,7 +34,7 @@ class XTDB(Database):
         print(f"Connecting to: {DB_PARAMS['host']}://{DB_PARAMS['port']}", f"{DB_PARAMS['dbname']}")
 
         try:
-            self.conn = await pg.AsyncConnection.connect(**DB_PARAMS, row_factory=dict_row, autocommit=True, prepare_threshold=0)
+            self.conn = await pg.AsyncConnection.connect(**DB_PARAMS, row_factory=dict_row, autocommit=True, prepare_threshold=None)
             print("Connected to XTDB database successfully.")
             self.conn.adapters.register_dumper(str, pg.types.string.StrDumperVarchar)
 
@@ -52,31 +52,15 @@ class XTDB(Database):
             query = QueryDiff.ERASE_ALL
             await cur.execute(query)
 
-    def safe_execute(func):
-        @wraps(func)
-        async def wrapper(self, *args, **kwargs):
-            try:
-                return await func(self, *args, **kwargs)
-            except ProtocolViolation as e:
-                print(f"[safe_execute] ProtocolViolation detected: {e}")
-                print("[safe_execute] Deallocating all prepared statements...")
-                async with self.conn.cursor() as cur:
-                    await cur.execute("DEALLOCATE ALL")
-                return await func(self, *args, **kwargs)
-        return wrapper
-    
-    @safe_execute
     async def _execute_query(self, query, params):
         async with self.conn.cursor() as cur:
             await cur.execute(query, params)
 
-    @safe_execute
     async def _execute_fetchone(self, query, params):
         async with self.conn.cursor() as cur:
             await cur.execute(query, params)
             return await cur.fetchone()
 
-    @safe_execute
     async def _execute_fetchall(self, query, params):
         async with self.conn.cursor() as cur:
             await cur.execute(query, params)
@@ -99,7 +83,6 @@ class XTDB(Database):
         
         #1. Get most recent valid attributes
         past = {}
-
         row = await self._execute_fetchone(QueryState.SELECT_ALL_CURRENT_ATTR_VT, (dt, id))
         if row:
             past = row['attributes']
