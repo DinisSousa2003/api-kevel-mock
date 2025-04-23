@@ -6,3 +6,5 @@ dataset
 config.json
 *.TDB
 .docker
+node_modules
+package-lock.json

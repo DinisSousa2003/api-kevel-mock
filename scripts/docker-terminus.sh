@@ -10,7 +10,8 @@ docker volume rm -f terminusdb-data
 docker volume create terminusdb-data
 
 docker run -p 6363:6363 \
-  --pull always -d -v terminusdb-data:/app/terminusdb/storage \
+  --pull always -d \
+  -v terminusdb-data:/app/terminusdb/storage \
   --name terminusdb terminusdb/terminusdb-server:v11
 
 # Define the project name
