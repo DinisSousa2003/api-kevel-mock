@@ -15,7 +15,14 @@
 python3 full-test.py <terminus|xtdb2|postgres>
 ```
 
-## Characteristics
+## How to get size of DB
+
+- Postgres: Use the endpoint users/<mode>/db/size
+- TerminusDB: Use the docker volume size: `docker run --rm -v terminusdb-data:/data alpine du -sh /data` to get full size and size() to get in-memory size of layer (need to run the symlinks script first)
+- XTDB: TODO
+
+
+## Characteristics (TODO)
 Updates to the past
 Updates to the future (past now)
 Query present

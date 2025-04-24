@@ -12,8 +12,13 @@ const client = new TerminusDBClient.WOQLClient("http://localhost:6363/",
 
     async function listDatabases() {
         try {
-            const result = await client.getDatabases();
-            console.log("Available databases:", result);
+            client.db(dbName)
+
+            const dbList = await client.getDatabases(); // returns all user DBs
+            const branchInfo = await client.getBranches(); // returns available branches
+
+            console.log("Available databases:", dbList);
+            console.log("Available branches:", branchInfo);
         } catch (err) {
             console.error("Could not list databases:", err.message);
         }
@@ -26,14 +31,15 @@ const client = new TerminusDBClient.WOQLClient("http://localhost:6363/",
             // Construct the WOQL query to get the database size
             const WOQL = TerminusDBClient.WOQL;
             const v = WOQL.Vars("size")
-            const query = WOQL.size(dbName, v.size);
+            const query = WOQL.size(`${user}/${dbName}`, v.size);
 
             // Execute the query
             const result = await client.query(query);
+            const bytes = result["bindings"][0]["size"]["@value"]
 
-            console.log("Database size:", result);
+            console.log("Database size:", bytes, "bytes");
 
-
+            return bytes
         } catch (err) {
             console.error("Error querying database:", err);
             process.exit(1);

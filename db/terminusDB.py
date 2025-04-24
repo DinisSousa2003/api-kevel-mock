@@ -56,17 +56,17 @@ class terminusDB(Database):
             self.get_client.connect(key="root", team="admin", user="admin", db=self.db_name)
             print("Connected successfully.")
 
-            self.get_client.optimize(f'admin/{self.db_name}') # optimise database branch (here main)
-            self.get_client.optimize(f'admin/{self.db_name}/_meta') # optimise the repository graph (actually creates a squashed flat layer)
-            self.get_client.optimize(f'admin/{self.db_name}/local/_commits') # commit graph is optimised
+            # self.get_client.optimize(f'admin/{self.db_name}') # optimise database branch (here main)
+            # self.get_client.optimize(f'admin/{self.db_name}/_meta') # optimise the repository graph (actually creates a squashed flat layer)
+            # self.get_client.optimize(f'admin/{self.db_name}/local/_commits') # commit graph is optimised
 
             self.update_client = Client(DB_PARAMS["scheme"] + "://" + DB_PARAMS["client"])
             self.update_client.connect(key="root", team="admin", user="admin", db=self.db_name)
             print("Connected successfully.")
 
-            self.update_client.optimize(f'admin/{self.db_name}') # optimise database branch (here main)
-            self.update_client.optimize(f'admin/{self.db_name}/_meta') # optimise the repository graph (actually creates a squashed flat layer)
-            self.update_client.optimize(f'admin/{self.db_name}/local/_commits') # commit graph is optimised
+            # self.update_client.optimize(f'admin/{self.db_name}') # optimise database branch (here main)
+            # self.update_client.optimize(f'admin/{self.db_name}/_meta') # optimise the repository graph (actually creates a squashed flat layer)
+            # self.update_client.optimize(f'admin/{self.db_name}/local/_commits') # commit graph is optimised
 
             
 
