@@ -1,4 +1,5 @@
 # WOQLQuery – Making logical queries with triples
+Published: https://terminusdb.org/docs/python-woql-customer-data-processing-example/
 
 ## The problem
 

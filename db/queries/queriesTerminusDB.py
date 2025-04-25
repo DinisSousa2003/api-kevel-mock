@@ -34,10 +34,10 @@ class TerminusDBAPI():
     
         return query
     
-    def get_size(self, db_name):
+    def get_size(self, user, db_name):
         (v_size) = wq().vars('size')
 
-        query = wq().size(f"admin/{db_name}", v_size)
+        query = wq().size(f"{user}/{db_name}", v_size)
         
         return query
 

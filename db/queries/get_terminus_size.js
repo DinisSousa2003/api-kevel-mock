@@ -1,10 +1,8 @@
 const TerminusDBClient = require('@terminusdb/terminusdb-client');
 
-//THIS IS NOT WORKING
-
-const dbName = "terminus" //process.argv[2];
-const user = "admin" //process.env.TERMINUSDB_USER;
-const key = "root" //process.env.TERMINUSDB_KEY;
+const dbName = process.argv[2];
+const user = process.env.TERMINUSDB_USER;
+const key = process.env.TERMINUSDB_KEY;
 
 const client = new TerminusDBClient.WOQLClient("http://localhost:6363/",
     {user:user, key:key});

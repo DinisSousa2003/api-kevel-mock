@@ -1,3 +1,14 @@
+def readable_size(num_bytes: int) -> str:
+    units = ['B', 'KB', 'MB', 'GB', 'TB']
+    size = float(num_bytes)
+    for unit in units:
+        if size < 1024 or unit == 'TB':
+            if unit == 'B':
+                return f"{int(size)} {unit}"
+            return f"{size:.1f} {unit}"
+        size /= 1024
+
+
 def merge_with_past(past, attributes, rules):
     for (attr, value) in attributes.items():
         rule = rules[attr]

@@ -9,7 +9,7 @@ from terminusdb_client import WOQLQuery as wq
 from db.database import Database
 from db.queries.schema_maker_terminus import MySchema
 from db.queries.queriesTerminusDB import TerminusDBAPI
-from db.queries.helper import merge_with_past
+from db.queries.helper import merge_with_past, readable_size
 from requests.auth import HTTPBasicAuth
 import uuid
 import os
@@ -30,9 +30,9 @@ class terminusDB(Database):
         self.schema = MySchema(rules=self.rules)
         self.db_name = None
 
-        user = os.getenv("USERNAME", "admin")
-        key = os.getenv("KEY", "root")
-        self.auth = HTTPBasicAuth(user, key)
+        self.user = os.getenv("USERNAME", "admin")
+        self.key = os.getenv("KEY", "root")
+        self.auth = HTTPBasicAuth(self.user, self.key)
 
         self.API = None
 
@@ -90,22 +90,33 @@ class terminusDB(Database):
             self.get_client.delete_document(doc["@id"])
 
     async def check_size(self):
+        # While the size function is not updated, need to run the create symlink script
+        print(f"[INFO] Running symlink script")
+        subprocess.run(["bash", "scripts/symlinks-terminus.sh"], check=True)
+
+        size_dict = {}
+
+        #Using size function
+        query = self.API.get_size(self.user, self.db_name)
+        result = self.get_client.query(query)
+
+        bytes = result["bindings"][0]["size"]["@value"]
+        size_dict["size_func"] = readable_size(bytes)
+
+        #Using docker volume size
         try:
-            result = subprocess.run(
-                ["node", "get_db_size.js", self.db_name],
-                capture_output=True,
-                text=True,
-                check=True,
-                env={
-                    **os.environ,
-                    "TERMINUSDB_USER": self.auth.username,
-                    "TERMINUSDB_KEY": self.auth.password
-                }
-            )
-            return json.loads(result.stdout)
+            docker_output = subprocess.check_output([
+                "docker", "run", "--rm", "-v", "terminusdb-data:/data",
+                "alpine", "du", "-sb", "/data"
+            ], text=True)
+            volume_bytes = int(docker_output.split()[0])
+            size_dict["docker_size"] = readable_size(volume_bytes)
         except subprocess.CalledProcessError as e:
-            print("Error:", e.stderr)
-            return None
+            size_dict["docker_size"] = f"Error: {e}"
+
+        return size_dict
+
+
     
     async def check_size_state(self):
         return await self.check_size()
