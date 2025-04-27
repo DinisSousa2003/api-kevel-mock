@@ -48,6 +48,8 @@ class QueryState():
     
     INSERT_WITH_TIME_PERIOD = """INSERT INTO customer_state RECORDS {_id: %s, attributes: %s, _valid_from: %s, _valid_to: %s};"""
 
+    SELECT_SIZE = """SELECT sum(data_file_size) FROM xt.trie_stats WHERE trie_state = 'live';"""
+
     # def PATCH_MOST_RECENT(attr, value):
     #     return f"""PATCH INTO customer_state FOR VALID_TIME FROM %s RECORDS {{_id: %s, "{attr}": {value} }};"""
     

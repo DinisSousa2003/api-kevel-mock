@@ -1,14 +1,14 @@
+import os
+import subprocess
 import psycopg as pg
 from psycopg.types.json import Jsonb
 from psycopg.rows import dict_row
-from psycopg.errors import ProtocolViolation
-from functools import wraps
 from imports.models import UserProfile
 from imports.test_helper import GetType, PutType
 from imports.rules import Rules
 from db.queries.queriesXTDB import QueryState, QueryDiff
 from db.database import Database
-from db.queries.helper import merge_with_past, merge_with_future 
+from db.queries.helper import merge_with_past, merge_with_future, readable_size
 import uuid
 from datetime import datetime, timezone
 from urllib.parse import urlparse 
@@ -65,6 +65,57 @@ class XTDB(Database):
         async with self.conn.cursor() as cur:
             await cur.execute(query, params)
             return await cur.fetchall()
+        
+    async def check_size(self):
+        size_dict = {}
+        STORAGE_PATH="/tmp/xtdb-data-dir"
+
+        #TODO: Using size function (NOT WORKING)
+        result = await self._execute_fetchall(QueryState.SELECT_SIZE, ())
+
+        print(result, type(result))
+
+        def du(path):
+            try:
+                output = subprocess.check_output(["du", "-sb", path], text=True)
+                size_bytes = int(output.split()[0])
+                return size_bytes
+            except subprocess.CalledProcessError:
+                return 0
+            except FileNotFoundError:
+                return 0
+
+        paths = {
+            "total": STORAGE_PATH,
+            "log": os.path.join(STORAGE_PATH, "log"),
+            "buffers": os.path.join(STORAGE_PATH, "buffers"),
+        }
+
+        size_dict = {}
+        for key, path in paths.items():
+            size_dict[key] = readable_size(du(path))
+
+        # Per-table sizes under buffers/v05/tables
+        tables_base = os.path.join(STORAGE_PATH, "buffers", "v05", "tables")
+        if os.path.isdir(tables_base):
+            for table in os.listdir(tables_base):
+                table_path = os.path.join(tables_base, table)
+                if os.path.isdir(table_path):
+                    size_dict[f"tables/{table}"] =  readable_size(du(table_path))
+                table_path_data = os.path.join(table_path, "data")
+                if os.path.isdir(table_path):
+                    size_dict[f"tables/data/{table}"] =  readable_size(du(table_path_data))
+                table_path_meta = os.path.join(table_path, "meta")
+                if os.path.isdir(table_path):
+                    size_dict[f"tables/meta/{table}"] =  readable_size(du(table_path_meta))
+
+        return size_dict
+
+    async def check_size_state(self):
+        return await self.check_size()
+    
+    async def check_size_diff(self):
+        return await self.check_size()
 
 
 ##########################STATE BASED FUNCTIONS#################################################
@@ -155,7 +206,7 @@ class XTDB(Database):
             raise Exception("Database connection not established")
 
         query = QueryState.SELECT_ALL_VALID_WITH_TIMES
-        rows = await self._execute_fetchall(query)
+        rows = await self._execute_fetchall(query, ())
 
         return rows
         

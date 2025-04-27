@@ -116,8 +116,6 @@ class terminusDB(Database):
 
         return size_dict
 
-
-    
     async def check_size_state(self):
         return await self.check_size()
     
