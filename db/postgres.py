@@ -1,3 +1,4 @@
+import subprocess
 from typing import Optional
 from urllib.parse import urlparse 
 import psycopg as pg
@@ -6,7 +7,7 @@ from psycopg.rows import dict_row
 from datetime import datetime, timezone
 from db.database import Database
 from db.queries.queriesPostgres import QueryState, QueryDiff
-from db.queries.helper import merge_with_past, merge_with_future 
+from db.queries.helper import merge_with_past, merge_with_future, readable_size
 from imports.models import UserProfile
 from imports.rules import Rules
 from imports.test_helper import GetType, PutType
@@ -200,7 +201,16 @@ class PostgreSQL(Database):
         async with self.conn.cursor() as cur:
             await cur.execute(query)
             rows = await cur.fetchall()
-            return rows
+            size_dict = {item['name']: item['size'] for item in rows}
+
+            docker_output = subprocess.check_output([
+                "docker", "run", "--rm", "-v", "pgdata:/data",
+                "alpine", "du", "-sb", "/data"
+            ], text=True)
+            volume_bytes = int(docker_output.split()[0])
+            size_dict["docker_size"] = readable_size(volume_bytes)
+
+            return size_dict
     
 
 ##########################DIFF BASED FUNCTIONS#################################################
@@ -276,6 +286,13 @@ class PostgreSQL(Database):
         async with self.conn.cursor() as cur:
             await cur.execute(query)
             rows = await cur.fetchall()
-            return rows
-        
-            
+            size_dict = {item['name']: item['size'] for item in rows}
+
+            docker_output = subprocess.check_output([
+                "docker", "run", "--rm", "-v", "pgdata:/data",
+                "alpine", "du", "-sb", "/data"
+            ], text=True)
+            volume_bytes = int(docker_output.split()[0])
+            size_dict["docker_size"] = readable_size(volume_bytes)
+
+            return size_dict

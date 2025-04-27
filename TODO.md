@@ -1,4 +1,4 @@
 - See if size function works on Python now that I have symlinks
-- Make the size endpoint work on terminus
 - Postgres is not persisting (lose the data on reload)
+- Get docker volume size for postgres
 - Check how to get the space occupied on xtdb2
