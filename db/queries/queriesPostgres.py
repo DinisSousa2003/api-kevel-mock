@@ -41,15 +41,28 @@ class QueryState():
                         DO UPDATE SET 
                         attributes = EXCLUDED.attributes"""
 
-    CHECK_SIZE_STATE = """SELECT
-                        relname AS name,
-                        pg_size_pretty(pg_relation_size(relid)) AS size
+    CHECK_SIZE_STATE = """
+                    SELECT
+                        CONCAT(relname, '_total') AS name,
+                        pg_total_relation_size(relid) AS size
                     FROM pg_catalog.pg_statio_user_tables
                     WHERE relname = 'customer_state'
                     UNION ALL
                     SELECT
+                        relname AS name,
+                        pg_table_size(relid) AS size
+                    FROM pg_catalog.pg_statio_user_tables
+                    WHERE relname = 'customer_state'
+                    UNION ALL
+                    SELECT
+                        CONCAT(relname, '_indexes') AS name,
+                        pg_indexes_size(relid) AS size
+                    FROM pg_catalog.pg_stat_user_tables
+                    WHERE relname = 'customer_state'
+                    UNION ALL
+                    SELECT
                         indexrelname AS name,
-                        pg_size_pretty(pg_relation_size(indexrelid)) AS size
+                        pg_relation_size(indexrelid) AS size
                     FROM pg_catalog.pg_stat_user_indexes
                     WHERE relname = 'customer_state';"""
     

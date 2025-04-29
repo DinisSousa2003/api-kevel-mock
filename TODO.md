@@ -1,3 +1,1 @@
 - Postgres is not persisting (lose the data on reload)
-- Size of only .larch files on terminusdb and compare with total folder size (?)
-- Size of only parts of the global folder in postgres (check how to do this)
