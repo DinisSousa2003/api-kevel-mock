@@ -1,8 +1,11 @@
+import subprocess
+
+
 def readable_size(num_bytes: int) -> str:
-    units = ['B', 'KB', 'MB', 'GB', 'TB']
+    units = ['B', 'KiB', 'MiB', 'GiB', 'TiB']
     size = float(num_bytes)
     for unit in units:
-        if size < 1024 or unit == 'TB':
+        if size < 1024 or unit == 'TiB':
             if unit == 'B':
                 return f"{int(size)} {unit}"
             return f"{size:.1f} {unit}"
@@ -60,3 +63,35 @@ def merge_with_future(future, attributes, rules):
             future['attributes'][attr] = value or future['attributes'].get(attr, False)
 
     return future
+
+
+def du(path):
+    try:
+        output = subprocess.check_output(["du", "-sb", path], text=True)
+        size_bytes = int(output.split()[0])
+        return size_bytes
+    except subprocess.CalledProcessError:
+        return 0
+    except FileNotFoundError:
+        return 0
+    
+def docker_du(docker, path, args="-sb", pattern=None, multiply=1):
+    try:
+        if pattern:
+            cmd = [
+                "docker", "run", "--rm", "-v", docker,
+                "alpine", "sh", "-c",
+                f"du -ba {path} | grep '{pattern}' | awk '{{sum += $1}} END {{print sum}}'"
+            ]
+        else:
+            cmd = [
+                "docker", "run", "--rm", "-v", docker,
+                "alpine", "du", args, path
+            ]
+        output = subprocess.check_output(cmd, text=True)
+        size_bytes = int(output.split()[0]) * multiply
+        return size_bytes
+    except subprocess.CalledProcessError:
+        return 0
+    except FileNotFoundError:
+        return 0

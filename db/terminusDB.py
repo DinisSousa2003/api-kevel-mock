@@ -9,14 +9,13 @@ from terminusdb_client import WOQLQuery as wq
 from db.database import Database
 from db.queries.schema_maker_terminus import MySchema
 from db.queries.queriesTerminusDB import TerminusDBAPI
-from db.queries.helper import merge_with_past, readable_size
+from db.queries.helper import merge_with_past, readable_size, docker_du
 from requests.auth import HTTPBasicAuth
 import uuid
 import os
 import pprint as pp
 from dotenv import load_dotenv
 import subprocess
-import json
 
 class terminusDB(Database):
 
@@ -56,17 +55,17 @@ class terminusDB(Database):
             self.get_client.connect(key="root", team="admin", user="admin", db=self.db_name)
             print("Connected successfully.")
 
-            # self.get_client.optimize(f'admin/{self.db_name}') # optimise database branch (here main)
-            # self.get_client.optimize(f'admin/{self.db_name}/_meta') # optimise the repository graph (actually creates a squashed flat layer)
-            # self.get_client.optimize(f'admin/{self.db_name}/local/_commits') # commit graph is optimised
+            self.get_client.optimize(f'admin/{self.db_name}') # optimise database branch (here main)
+            self.get_client.optimize(f'admin/{self.db_name}/_meta') # optimise the repository graph (actually creates a squashed flat layer)
+            self.get_client.optimize(f'admin/{self.db_name}/local/_commits') # commit graph is optimised
 
             self.update_client = Client(DB_PARAMS["scheme"] + "://" + DB_PARAMS["client"])
             self.update_client.connect(key="root", team="admin", user="admin", db=self.db_name)
             print("Connected successfully.")
 
-            # self.update_client.optimize(f'admin/{self.db_name}') # optimise database branch (here main)
-            # self.update_client.optimize(f'admin/{self.db_name}/_meta') # optimise the repository graph (actually creates a squashed flat layer)
-            # self.update_client.optimize(f'admin/{self.db_name}/local/_commits') # commit graph is optimised
+            self.update_client.optimize(f'admin/{self.db_name}') # optimise database branch (here main)
+            self.update_client.optimize(f'admin/{self.db_name}/_meta') # optimise the repository graph (actually creates a squashed flat layer)
+            self.update_client.optimize(f'admin/{self.db_name}/local/_commits') # commit graph is optimised
 
             
 
@@ -90,29 +89,26 @@ class terminusDB(Database):
             self.get_client.delete_document(doc["@id"])
 
     async def check_size(self):
-        # While the size function is not updated, need to run the create symlink script
         print(f"[INFO] Running symlink script")
         subprocess.run(["bash", "scripts/symlinks-terminus.sh"], check=True)
 
         size_dict = {}
 
-        #Using size function
+        # Using size function
         query = self.API.get_size(self.user, self.db_name)
         result = self.get_client.query(query)
-
         bytes = result["bindings"][0]["size"]["@value"]
         size_dict["size_func"] = readable_size(bytes)
 
-        #Using docker volume size
-        try:
-            docker_output = subprocess.check_output([
-                "docker", "run", "--rm", "-v", "terminusdb-data:/data",
-                "alpine", "du", "-sb", "/data"
-            ], text=True)
-            volume_bytes = int(docker_output.split()[0])
-            size_dict["docker_size"] = readable_size(volume_bytes)
-        except subprocess.CalledProcessError as e:
-            size_dict["docker_size"] = f"Error: {e}"
+        # Using docker volume sizes
+        docker_path = "terminusdb-data:/data"
+        file_path = "/data/db"
+
+        size_dict["docker_size"] = readable_size(docker_du(docker_path, file_path, "-s", multiply=1024))
+        size_dict["docker_size_apparent"] = readable_size(docker_du(docker_path, file_path, "-sb"))
+        
+        # .larch total size
+        size_dict["larch_size"] = readable_size(docker_du(docker_path, file_path, pattern="\\.larch$"))
 
         return size_dict
 

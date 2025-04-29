@@ -1,4 +1,3 @@
-- See if size function works on Python now that I have symlinks
 - Postgres is not persisting (lose the data on reload)
-- Get docker volume size for postgres
-- Check how to get the space occupied on xtdb2
+- Size of only .larch files on terminusdb and compare with total folder size (?)
+- Size of only parts of the global folder in postgres (check how to do this)

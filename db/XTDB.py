@@ -8,7 +8,7 @@ from imports.test_helper import GetType, PutType
 from imports.rules import Rules
 from db.queries.queriesXTDB import QueryState, QueryDiff
 from db.database import Database
-from db.queries.helper import merge_with_past, merge_with_future, readable_size
+from db.queries.helper import merge_with_past, merge_with_future, readable_size, du
 import uuid
 from datetime import datetime, timezone
 from urllib.parse import urlparse 
@@ -74,16 +74,6 @@ class XTDB(Database):
         result = await self._execute_fetchall(QueryState.SELECT_SIZE, ())
 
         print(result, type(result))
-
-        def du(path):
-            try:
-                output = subprocess.check_output(["du", "-sb", path], text=True)
-                size_bytes = int(output.split()[0])
-                return size_bytes
-            except subprocess.CalledProcessError:
-                return 0
-            except FileNotFoundError:
-                return 0
 
         paths = {
             "total": STORAGE_PATH,
