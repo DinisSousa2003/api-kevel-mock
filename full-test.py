@@ -8,6 +8,7 @@
 
 #5. Run the test in the scripts/test.py file python test.py diff 10000 80 80 100
 
+import itertools
 import os
 import shutil
 import subprocess
@@ -15,6 +16,11 @@ import sys
 import time
 
 VALID_DATABASES = ["postgres", "terminus", "xtdb2"]
+MODE = ["diff", "state"]
+TOTAL_TIME = [1]  # in minutes
+PCT_GET = [30, 70]
+PCT_NOW = [90, 100]
+RATE = [50]
 
 def main():
     if len(sys.argv) != 2:
@@ -44,36 +50,42 @@ def main():
         print(f"[ERROR] Docker script {docker_script} not found.")
         sys.exit(1)
 
-    print(f"[INFO] Running Docker setup: {docker_script}")
-    subprocess.run(["bash", docker_script], check=True)
+    test_script = "./scripts/test.py"
+    if not os.path.isfile(test_script):
+        print(f"[ERROR] Test script {test_script} not found.")
+        sys.exit(1)
 
-    time.sleep(30)
+    os.makedirs(f"output/{database}", exist_ok=True)
 
-    #4. Run the application uvicorn main:app --reload
-    print("[INFO] Starting FastAPI server with Uvicorn...")
-    uvicorn_process = subprocess.Popen(["uvicorn", "main:app", "--reload"])
+    for mode, tt, pct_get, pct_now, rate in itertools.product(MODE, TOTAL_TIME, PCT_GET, PCT_NOW, RATE):
+        print(f"[INFO] Running Docker setup: {docker_script}")
+        subprocess.run(["bash", docker_script], check=True)
 
-    try:
-        # Give the server some time to start
-        print("[INFO] Waiting for the server to initialize...")
-        time.sleep(10)
+        print("[INFO] Waiting for the database to initialize...")
+        time.sleep(30)
 
-        # Step 5: Run the test script
-        test_script = "./scripts/test.py"
-        if not os.path.isfile(test_script):
-            print(f"[ERROR] Test script {test_script} not found.")
+        print("[INFO] Starting FastAPI server with Uvicorn...")
+        uvicorn_process = subprocess.Popen(["uvicorn", "main:app", "--reload"])
+
+        try:
+            print("[INFO] Waiting for the server to initialize...")
+            time.sleep(10)
+
+            output_file = f"output/{database}/test_{mode}_{tt}_{pct_get}_{pct_now}_{rate}.txt"
+            print(f"[INFO] Running test with mode={mode}, tt={tt}, get={pct_get}, now={pct_now}, rate={rate}")
+            with open(output_file, "w") as outfile:
+                subprocess.run(
+                    ["python", test_script, mode, str(tt), str(pct_get), str(pct_now), str(rate)],
+                    stdout=outfile,
+                    stderr=subprocess.STDOUT,
+                    check=True
+                )
+            print(f"[INFO] Output saved to {output_file}")
+
+        finally:
+            print("[INFO] Terminating Uvicorn server...")
             uvicorn_process.terminate()
-            sys.exit(1)
-
-        print("[INFO] Running test script...")
-        #MODE, TOTAL_TIME (minutes), PCT_GET, PCT_NOW, RATE
-        subprocess.run(["python", test_script, "state", "0.5", "30", "98", "5"], check=True)
-
-    finally:
-        # Make sure the server stops after testing
-        print("[INFO] Terminating Uvicorn server...")
-        uvicorn_process.terminate()
-        uvicorn_process.wait()
+            uvicorn_process.wait()
 
 if __name__ == "__main__":
     main()

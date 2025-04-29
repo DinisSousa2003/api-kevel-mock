@@ -163,7 +163,8 @@ if __name__ == "__main__":
     response = requests.get(url)
 
     print("\n=== Size Occupied Summary ===")
-    print(response.json())
+    for name, size in response.json().items():
+        print(f"{name}: {size}")
     
 
     print("\n=== PUT Request Timing Summary ===")
