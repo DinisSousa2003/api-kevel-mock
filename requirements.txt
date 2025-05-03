@@ -8,3 +8,4 @@ terminus
 terminusdb-client
 sortedcontainers
 immudb-py
+locust

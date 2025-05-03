@@ -1,1 +1,2 @@
 - Postgres is not persisting (lose the data on reload)
+- Visualizations for output (histograms with distribution of times, evolution of average, etc...)
