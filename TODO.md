@@ -1,2 +1,3 @@
 - Postgres is not persisting (lose the data on reload)
 - Visualizations for output (histograms with distribution of times, evolution of average, etc...)
+- Update full-test to use locust -f scripts/locusttest.py --headless -u 10 -r 10 --run-time 5  --mode diff   --pct-get 75   --pct-get-now 60   --host http://127.0.0.1:8000

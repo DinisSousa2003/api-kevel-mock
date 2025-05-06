@@ -50,7 +50,7 @@ def main():
         print(f"[ERROR] Docker script {docker_script} not found.")
         sys.exit(1)
 
-    test_script = "./scripts/test.py"
+    test_script = "./scripts/locusttest.py"
     if not os.path.isfile(test_script):
         print(f"[ERROR] Test script {test_script} not found.")
         sys.exit(1)

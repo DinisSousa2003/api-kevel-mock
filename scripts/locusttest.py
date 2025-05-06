@@ -1,17 +1,19 @@
 import sys
 import os
-
 import requests
 
 # Add the project root to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from locust import HttpUser, TaskSet, task, between, constant, events
+from locust import HttpUser, task, constant, events
 import json
 import random
 import argparse
 from collections import defaultdict
 from imports.test_helper import GetType, PutType
+import locust.stats
+locust.stats.CONSOLE_STATS_INTERVAL_SEC = 600
+
 
 # Command-line argument placeholders
 USER_MODE = "diff"
