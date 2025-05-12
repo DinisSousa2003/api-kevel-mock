@@ -57,7 +57,7 @@ def main():
 
     os.makedirs(f"output/{database}", exist_ok=True)
 
-    for mode, tt, pct_get, pct_now, rate in itertools.product(MODE, TOTAL_TIME, PCT_GET, PCT_NOW, RATE):
+    for mode, tt, pct_get, pct_now in itertools.product(MODE, TOTAL_TIME, PCT_GET, PCT_NOW):
         print(f"[INFO] Running Docker setup: {docker_script}")
         subprocess.run(["bash", docker_script], check=True)
 
@@ -71,16 +71,23 @@ def main():
             print("[INFO] Waiting for the server to initialize...")
             time.sleep(10)
 
-            output_file = f"output/{database}/test_{mode}_{tt}_{pct_get}_{pct_now}_{rate}.txt"
-            print(f"[INFO] Running test with mode={mode}, tt={tt}, get={pct_get}, now={pct_now}, rate={rate}")
-            with open(output_file, "w") as outfile:
-                subprocess.run(
-                    ["python", test_script, mode, str(tt), str(pct_get), str(pct_now), str(rate)],
-                    stdout=outfile,
-                    stderr=subprocess.STDOUT,
-                    check=True
-                )
-            print(f"[INFO] Output saved to {output_file}")
+            locust_command = [
+                    "locust",
+                    "-f", test_script,
+                    "--headless",
+                    "-u", "10",
+                    "-r", "10",
+                    "--run-time", f"{tt}m",
+                    "--mode", mode,
+                    "--pct-get", str(pct_get),
+                    "--pct-get-now", str(pct_now),
+                    "--db", database,
+                    "--host", "http://127.0.0.1:8000"
+                ]
+            
+            print(f"[INFO] Running test with mode={mode}, tt={tt}, get={pct_get}, now={pct_now}")
+            
+            subprocess.run(locust_command)
 
         finally:
             print("[INFO] Terminating Uvicorn server...")
