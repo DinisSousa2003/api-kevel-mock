@@ -18,9 +18,9 @@ import time
 VALID_DATABASES = ["postgres", "terminus", "xtdb2"]
 MODE = ["diff", "state"]
 TOTAL_TIME = [1]  # in minutes
+USERS = [10]
 PCT_GET = [30, 70]
 PCT_NOW = [90, 100]
-RATE = [50]
 
 def main():
     if len(sys.argv) != 2:
@@ -57,7 +57,7 @@ def main():
 
     os.makedirs(f"output/{database}", exist_ok=True)
 
-    for mode, tt, pct_get, pct_now in itertools.product(MODE, TOTAL_TIME, PCT_GET, PCT_NOW):
+    for mode, pct_get, pct_now, tt, users in itertools.product(MODE, PCT_GET, PCT_NOW, TOTAL_TIME, USERS):
         print(f"[INFO] Running Docker setup: {docker_script}")
         subprocess.run(["bash", docker_script], check=True)
 
@@ -75,17 +75,18 @@ def main():
                     "locust",
                     "-f", test_script,
                     "--headless",
-                    "-u", "10",
-                    "-r", "10",
+                    "-u", str(users),
                     "--run-time", f"{tt}m",
                     "--mode", mode,
                     "--pct-get", str(pct_get),
                     "--pct-get-now", str(pct_now),
                     "--db", database,
+                    "--time", str(tt),
+                    "--user-number", str(users),
                     "--host", "http://127.0.0.1:8000"
                 ]
             
-            print(f"[INFO] Running test with mode={mode}, tt={tt}, get={pct_get}, now={pct_now}")
+            print(f"[INFO] Running test with mode={mode}, tt={tt}, get={pct_get}, now={pct_now}, number of users={users}")
             
             subprocess.run(locust_command)
 

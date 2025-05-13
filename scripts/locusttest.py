@@ -22,6 +22,8 @@ USER_MODE = "diff"
 PCT_GET = 80
 PCT_GET_NOW = 50
 DB_NAME = "xtdb2"
+TIME = 60
+USERS = 10
 
 START = 1733011200  # Dec 1, 2024
 END = 1743379200    # Mar 31, 2025
@@ -44,24 +46,31 @@ def init_parser(parser: argparse.ArgumentParser):
     parser.add_argument("--pct-get", type=int, default=80, help="Percentage of GETs (0-100)")
     parser.add_argument("--pct-get-now", type=int, default=50, help="Percentage of GETs without timestamp")
     parser.add_argument("--db", type=str, required=False, default="xtdb2", help="Name of the database being used (to store output)")
+    parser.add_argument("--time", type=int, required=False, default="60", help="Time of test in minutes")
+    parser.add_argument("--user-number", type=int, required=False, default="10", help="Number of users per test")
 
 @events.test_start.add_listener
 def on_test_start(environment, **kwargs):
-    global USER_MODE, PCT_GET, PCT_GET_NOW, DB_NAME
+    global USER_MODE, PCT_GET, PCT_GET_NOW, DB_NAME, TIME, USERS
     USER_MODE = environment.parsed_options.mode
     PCT_GET = environment.parsed_options.pct_get
     PCT_GET_NOW = environment.parsed_options.pct_get_now
     DB_NAME = environment.parsed_options.db
-
-    print(f"\n--- Starting test ---")
+    TIME = environment.parsed_options.time
+    USERS = environment.parsed_options.user_number
+    
+    print(f"\n--- Starting test with parameters ---")
     print(f"Database: {DB_NAME}%")
     print(f"Mode: {USER_MODE}")
     print(f"GET percentage: {PCT_GET}%")
     print(f"GETs as of now: {PCT_GET_NOW}%")
+    print(f"Test duration: {TIME} minutes")
+    print(f"Number of users: {USERS}")
+    print(f"-------------------------------------")
 
 @events.test_stop.add_listener
 def on_test_stop(environment, **kwargs):
-    output_folder = f"output/{DB_NAME}/test_{USER_MODE}_{PCT_GET}_{PCT_GET_NOW}"
+    output_folder = f"output/{DB_NAME}/{USER_MODE}/time-{TIME}-users-{USERS}-gpt-{PCT_GET}-now-{PCT_GET_NOW}"
     os.makedirs(output_folder, exist_ok=True)
 
     url = USER_ENDPOINT + USER_MODE + "/db/size"
@@ -128,9 +137,6 @@ def on_test_stop(environment, **kwargs):
     # Save plots to output folder
     put_plot_path = os.path.join(output_folder, "put_distribution.png")
     get_plot_path = os.path.join(output_folder, "get_distribution.png")
-
-    plot_distribution(put_request_times, "PUT Request Time Distribution", "scripts/analysis/put_distribution.png")
-    plot_distribution(get_request_times, "GET Request Time Distribution", "scripts/analysis/get_distribution.png")
 
     plot_distribution(put_request_times, "PUT Request Time Distribution", put_plot_path)
     plot_distribution(get_request_times, "GET Request Time Distribution", get_plot_path)

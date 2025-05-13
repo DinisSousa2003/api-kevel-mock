@@ -278,18 +278,15 @@ class PostgreSQL(Database):
         if self.conn is None:
             raise Exception("Database connection not established")
 
-        query = QueryDiff.CHECK_SIZE_DIFF
+        query = QueryState.CHECK_SIZE_STATE
 
         async with self.conn.cursor() as cur:
             await cur.execute(query)
             rows = await cur.fetchall()
-            size_dict = {item['name']: item['size'] for item in rows}
+            size_dict = {item['name']: readable_size(item['size']) for item in rows}
 
-            docker_output = subprocess.check_output([
-                "docker", "run", "--rm", "-v", "pgdata:/data",
-                "alpine", "du", "-sb", "/data"
-            ], text=True)
-            volume_bytes = int(docker_output.split()[0])
-            size_dict["docker_size"] = readable_size(volume_bytes)
+            size_dict["docker_size"] = readable_size(docker_du("pgdata:/data", "/data"))
+            size_dict["docker_size_base"] = readable_size(docker_du("pgdata:/data", "/data/base"))
+            size_dict["docker_size_wal"] = readable_size(docker_du("pgdata:/data", "/data/pg_wal"))
 
             return size_dict
