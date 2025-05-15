@@ -17,10 +17,10 @@ import time
 
 VALID_DATABASES = ["postgres", "terminus", "xtdb2"]
 MODE = ["diff", "state"]
-TOTAL_TIME = [1]  # in minutes
-USERS = [10]
-PCT_GET = [30, 70]
-PCT_NOW = [90, 100]
+TOTAL_TIME = [10]  # in minutes
+USERS = [10, 100, 1000]
+PCT_GET = [30]
+PCT_NOW = [95]
 
 def main():
     if len(sys.argv) != 2:

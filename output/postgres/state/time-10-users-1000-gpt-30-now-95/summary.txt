@@ -1,0 +1,19 @@
+
+=== Size Occupied Summary ===
+customer_state_total: 13.5 MiB
+customer_state: 13.3 MiB
+customer_state_indexes: 248.0 KiB
+customer_state_pkey: 104.0 KiB
+idx_state_id_at_desc: 96.0 KiB
+idx_state_at_brin: 24.0 KiB
+docker_size: 68.2 MiB
+docker_size_base: 35.5 MiB
+docker_size_wal: 32.0 MiB
+
+=== PUT SUMMARY by response type ===
+Status PutType.MOST_RECENT: 12811 ops, avg = 0.0194s, p25 = 0.0099s, p50 = 0.0135s, p75 = 0.0200s, p90 = 0.0307s, p99 = 0.1301s
+
+=== GET SUMMARY by response type ===
+Status GetType.CURRENT: 5138 ops, avg = 0.0099s, p25 = 0.0060s, p50 = 0.0076s, p75 = 0.0103s, p90 = 0.0150s, p99 = 0.0518s
+Status GetType.TIMESTAMP: 226 ops, avg = 0.0101s, p25 = 0.0061s, p50 = 0.0075s, p75 = 0.0104s, p90 = 0.0156s, p99 = 0.0401s
+Status GetType.NO_USER_AT_TIME: 64 ops, avg = 0.0090s, p25 = 0.0060s, p50 = 0.0073s, p75 = 0.0100s, p90 = 0.0169s, p99 = 0.0225s

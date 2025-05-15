@@ -1,0 +1,13 @@
+
+=== Size Occupied Summary ===
+total: 57.4 MiB
+log: 57.4 MiB
+buffers: 8.0 KiB
+
+=== PUT SUMMARY by response type ===
+Status PutType.MOST_RECENT: 10072 ops, avg = 2.3990s, p25 = 0.0251s, p50 = 1.1302s, p75 = 4.4982s, p90 = 6.1799s, p99 = 8.9651s
+
+=== GET SUMMARY by response type ===
+Status GetType.CURRENT: 4197 ops, avg = 2.4567s, p25 = 0.0652s, p50 = 1.2088s, p75 = 4.4998s, p90 = 6.1757s, p99 = 9.0298s
+Status GetType.NO_USER_AT_TIME: 52 ops, avg = 2.6900s, p25 = 0.0335s, p50 = 2.7155s, p75 = 5.1128s, p90 = 6.6365s, p99 = 8.2815s
+Status GetType.TIMESTAMP: 168 ops, avg = 2.6454s, p25 = 0.0607s, p50 = 1.6364s, p75 = 4.8888s, p90 = 6.5170s, p99 = 9.0617s

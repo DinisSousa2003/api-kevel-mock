@@ -1,3 +1,4 @@
 - Postgres is not persisting (lose the data on reload)
 - Visualizations for output (evolution of average, etc...)
 - Thesis writing
+- Repeat diff on postgres for 10 min

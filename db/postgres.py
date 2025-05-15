@@ -278,7 +278,7 @@ class PostgreSQL(Database):
         if self.conn is None:
             raise Exception("Database connection not established")
 
-        query = QueryState.CHECK_SIZE_STATE
+        query = QueryDiff.CHECK_SIZE_DIFF
 
         async with self.conn.cursor() as cur:
             await cur.execute(query)

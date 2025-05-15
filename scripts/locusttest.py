@@ -85,19 +85,25 @@ def on_test_stop(environment, **kwargs):
     summary_lines.append("\n=== PUT SUMMARY by response type ===")
     for resp_type, times in put_request_times.items():
         avg = sum(times) / len(times)
+        p25 = np.percentile(times, 25)
+        p50 = np.percentile(times, 50)
+        p75 = np.percentile(times, 75)
         p90 = np.percentile(times, 90)
         p99 = np.percentile(times, 99)
         summary_lines.append(
-            f"Status {PutType(resp_type)}: {len(times)} ops, avg = {avg:.4f}s, p90 = {p90:.4f}s, p99 = {p99:.4f}s"
+            f"Status {PutType(resp_type)}: {len(times)} ops, avg = {avg:.4f}s, p25 = {p25:.4f}s, p50 = {p50:.4f}s, p75 = {p75:.4f}s, p90 = {p90:.4f}s, p99 = {p99:.4f}s"
         )
 
     summary_lines.append("\n=== GET SUMMARY by response type ===")
     for resp_type, times in get_request_times.items():
         avg = sum(times) / len(times)
+        p25 = np.percentile(times, 25)
+        p50 = np.percentile(times, 50)
+        p75 = np.percentile(times, 75)
         p90 = np.percentile(times, 90)
         p99 = np.percentile(times, 99)
         summary_lines.append(
-            f"Status {GetType(resp_type)}: {len(times)} ops, avg = {avg:.4f}s, p90 = {p90:.4f}s, p99 = {p99:.4f}s"
+            f"Status {GetType(resp_type)}: {len(times)} ops, avg = {avg:.4f}s, p25 = {p25:.4f}s, p50 = {p50:.4f}s, p75 = {p75:.4f}s, p90 = {p90:.4f}s, p99 = {p99:.4f}s"
         )
 
     # Write summary to file
@@ -134,17 +140,58 @@ def on_test_stop(environment, **kwargs):
         plt.savefig(filename)
         plt.close()
 
+    def plot_average_evolution(times_dict, title, filename):
+        plt.figure(figsize=(10, 6))
+        for resp_type, times in times_dict.items():
+            if "GET" in title:
+                label = GetType(resp_type)
+            else:
+                label = PutType(resp_type)
+            avg_times = [sum(times[:i+1]) / (i+1) for i in range(len(times))]
+            plt.plot(avg_times, label=label)
+
+        plt.title(title)
+        plt.xlabel("Request Number")
+        plt.ylabel("Average Time (s)")
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(filename)
+        plt.close()
+
+    def boxplot_distribution(times_dict, title, filename):
+        plt.figure(figsize=(10, 6))
+        data = [times for times in times_dict.values()]
+        plt.boxplot(data, labels=[PutType(resp_type) if "PUT" in title else GetType(resp_type) for resp_type in times_dict.keys()])
+        plt.title(title)
+        plt.ylabel("Time (s)")
+        plt.xlabel("Response Type")
+        plt.tight_layout()
+        plt.savefig(filename)
+        plt.close()
+
     # Save plots to output folder
     put_plot_path = os.path.join(output_folder, "put_distribution.png")
     get_plot_path = os.path.join(output_folder, "get_distribution.png")
 
+    put_avg_plot_path = os.path.join(output_folder, "put_average_evolution.png")
+    get_avg_plot_path = os.path.join(output_folder, "get_average_evolution.png")
+
+    put_box_plot_path = os.path.join(output_folder, "put_boxplot.png")
+    get_box_plot_path = os.path.join(output_folder, "get_boxplot.png")
+
     plot_distribution(put_request_times, "PUT Request Time Distribution", put_plot_path)
     plot_distribution(get_request_times, "GET Request Time Distribution", get_plot_path)
+
+    plot_average_evolution(put_request_times, "PUT Request Time Evolution", put_avg_plot_path)
+    plot_average_evolution(get_request_times, "GET Request Time Evolution", get_avg_plot_path)
+
+    boxplot_distribution(put_request_times, "PUT Request Time Boxplot", put_box_plot_path)
+    boxplot_distribution(get_request_times, "GET Request Time Boxplot", get_box_plot_path)
 
     print(f"\nSaved request time distribution plots and summary to '{output_folder}'")
 
 class ProfileUser(HttpUser):
-    wait_time = constant(1)
+    wait_time = constant(10) #wait 10 seconds after a task
 
     def on_start(self):
         # Open the file once and keep an iterator
