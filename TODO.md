@@ -1,7 +1,4 @@
 - Postgres is not persisting (lose the data on reload)
-- Add Total PUT and GET to boxplot on locust
-- Check how to change the rate of locusttest
-- Chnage the way full test is ran: do not select the database from the console, do it with the lists
 - Time between updates not per client on analysis
 - Script to read the averages and draw a plot for each database
 - Thesis writing

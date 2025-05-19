@@ -23,8 +23,8 @@ PCT_GET = 80
 PCT_GET_NOW = 50
 DB_NAME = "xtdb2"
 TIME = 60
-USERS = 10
-RATE = 10
+USERS = 1
+RATE = 0.1 #CHANGE THIS TO CHANGE THE WAIT TIME BETWEEN REQUESTS, IT SEEMS TO BE UNCHANGED BY THE LOCUST COMMAND LINE ARGUMENTS
 
 START = 1733011200  # Dec 1, 2024
 END = 1743379200    # Mar 31, 2025
@@ -53,14 +53,13 @@ def init_parser(parser: argparse.ArgumentParser):
 
 @events.test_start.add_listener
 def on_test_start(environment, **kwargs):
-    global USER_MODE, PCT_GET, PCT_GET_NOW, DB_NAME, TIME, USERS, RATE
+    global USER_MODE, PCT_GET, PCT_GET_NOW, DB_NAME, TIME, USERS
     USER_MODE = environment.parsed_options.mode
     PCT_GET = environment.parsed_options.pct_get
     PCT_GET_NOW = environment.parsed_options.pct_get_now
     DB_NAME = environment.parsed_options.db
     TIME = environment.parsed_options.time
     USERS = environment.parsed_options.user_number
-    RATE = environment.parsed_options.rate
     
     print(f"\n--- Starting test with parameters ---")
     print(f"Database: {DB_NAME}%")
@@ -87,6 +86,18 @@ def on_test_stop(environment, **kwargs):
         summary_lines.append(f"{name}: {size}")
 
     summary_lines.append("\n=== PUT SUMMARY by response type ===")
+    #All PUT requests
+    all_put_times = [time for times in put_request_times.values() for time in times]
+    all_avg = sum(all_put_times) / len(all_put_times)
+    all_p25 = np.percentile(all_put_times, 25)
+    all_p50 = np.percentile(all_put_times, 50)
+    all_p75 = np.percentile(all_put_times, 75)
+    all_p90 = np.percentile(all_put_times, 90)
+    all_p99 = np.percentile(all_put_times, 99)
+    summary_lines.append(
+        f"Status ALL PUT: {len(all_put_times)} ops, avg = {all_avg:.4f}s, p25 = {all_p25:.4f}s, p50 = {all_p50:.4f}s, p75 = {all_p75:.4f}s, p90 = {all_p90:.4f}s, p99 = {all_p99:.4f}s"
+    )
+
     for resp_type, times in put_request_times.items():
         avg = sum(times) / len(times)
         p25 = np.percentile(times, 25)
@@ -99,6 +110,19 @@ def on_test_stop(environment, **kwargs):
         )
 
     summary_lines.append("\n=== GET SUMMARY by response type ===")
+
+    #All GET requests
+    all_get_times = [time for times in get_request_times.values() for time in times]
+    all_avg = sum(all_get_times) / len(all_get_times)
+    all_p25 = np.percentile(all_get_times, 25)
+    all_p50 = np.percentile(all_get_times, 50)
+    all_p75 = np.percentile(all_get_times, 75)
+    all_p90 = np.percentile(all_get_times, 90)
+    all_p99 = np.percentile(all_get_times, 99)
+    summary_lines.append(
+        f"Status ALL GET: {len(all_get_times)} ops, avg = {all_avg:.4f}s, p25 = {all_p25:.4f}s, p50 = {all_p50:.4f}s, p75 = {all_p75:.4f}s, p90 = {all_p90:.4f}s, p99 = {all_p99:.4f}s"
+    )
+
     for resp_type, times in get_request_times.items():
         avg = sum(times) / len(times)
         p25 = np.percentile(times, 25)
@@ -165,7 +189,10 @@ def on_test_stop(environment, **kwargs):
     def boxplot_distribution(times_dict, title, filename):
         plt.figure(figsize=(10, 6))
         data = [times for times in times_dict.values()]
-        plt.boxplot(data, labels=[PutType(resp_type) if "PUT" in title else GetType(resp_type) for resp_type in times_dict.keys()])
+        #add an entry for the ALL PUT/GET requests
+        all_times = [time for times in times_dict.values() for time in times]
+        data.append(all_times)
+        plt.boxplot(data, labels=[PutType(resp_type) if "PUT" in title else GetType(resp_type) for resp_type in times_dict.keys()] + ["ALL"])
         plt.title(title)
         plt.ylabel("Time (s)")
         plt.xlabel("Response Type")
@@ -196,6 +223,7 @@ def on_test_stop(environment, **kwargs):
 
 class ProfileUser(HttpUser):
     wait_time = constant(RATE) #wait RATE seconds after a task
+    #THE WAIT TIME SEEMS TO BE UNCHANGED BY THE LOCUST COMMAND LINE ARGUMENTS, CHANGE IT HERE
 
     def on_start(self):
         # Open the file once and keep an iterator

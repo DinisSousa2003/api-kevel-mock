@@ -1,13 +1,13 @@
 
 === Size Occupied Summary ===
-total: 2.3 MiB
-log: 2.3 MiB
+total: 77.9 MiB
+log: 77.8 MiB
 buffers: 8.0 KiB
 
 === PUT SUMMARY by response type ===
-Status PutType.MOST_RECENT: 412 ops, avg = 0.0224s, p25 = 0.0156s, p50 = 0.0228s, p75 = 0.0244s, p90 = 0.0263s, p99 = 0.0393s
+Status PutType.MOST_RECENT: 13847 ops, avg = 0.1788s, p25 = 0.0959s, p50 = 0.1543s, p75 = 0.2356s, p90 = 0.3295s, p99 = 0.5512s
 
 === GET SUMMARY by response type ===
-Status GetType.CURRENT: 178 ops, avg = 0.0274s, p25 = 0.0203s, p50 = 0.0229s, p75 = 0.0297s, p90 = 0.0371s, p99 = 0.0562s
-Status GetType.TIMESTAMP: 7 ops, avg = 0.0364s, p25 = 0.0321s, p50 = 0.0347s, p75 = 0.0394s, p90 = 0.0450s, p99 = 0.0479s
-Status GetType.NO_USER_AT_TIME: 1 ops, avg = 0.0323s, p25 = 0.0323s, p50 = 0.0323s, p75 = 0.0323s, p90 = 0.0323s, p99 = 0.0323s
+Status GetType.CURRENT: 5686 ops, avg = 0.2398s, p25 = 0.1449s, p50 = 0.2136s, p75 = 0.3056s, p90 = 0.4091s, p99 = 0.6483s
+Status GetType.NO_USER_AT_TIME: 73 ops, avg = 0.2214s, p25 = 0.1278s, p50 = 0.1890s, p75 = 0.2553s, p90 = 0.3687s, p99 = 0.6777s
+Status GetType.TIMESTAMP: 253 ops, avg = 0.2424s, p25 = 0.1557s, p50 = 0.2356s, p75 = 0.3065s, p90 = 0.3790s, p99 = 0.5800s
