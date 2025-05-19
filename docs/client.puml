@@ -1,0 +1,33 @@
+@startuml Multi-Source Data Collection
+'title Customer Data Platform - Multi-Source Data Collection
+
+actor Client
+
+participant "In-Person Store" as Store
+participant "Online Store" as Online
+database "Customer Data Platform (CDP)" as CDP
+
+
+== Day 1 ==
+Client -> Store : Visits store.
+
+== Day 2 ==
+Client -> Online : Browses online store.
+Online -> CDP : Store facts of online browsing.
+
+Client -> Online : Makes purchase.
+Online -> CDP : Store facts of online purchase.
+
+== Day 3 ==
+Store -> CDP : Store facts related to in-store visit.
+
+/'
+note right of CDP
+Different sources provide data with varying time bounds:
+- In-store: near real-time
+- Online: may be delayed or backdated
+end note
+'/
+
+
+@enduml

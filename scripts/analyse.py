@@ -51,50 +51,74 @@ def analyse_jsonl(file_path, output_path="analysis/analyse.png"):
         for times in user_timestamps.values() if len(times) > 1
     ]) if user_timestamps else 0
     
+    # plt.figure(figsize=(18, 10))
+    
+    # # Distribution of updates per user
+    # plt.subplot(2, 3, 1)
+    # plt.hist(user_updates.values(), bins=20, color='blue', alpha=0.7)
+    # plt.xlabel('Updates per User')
+    # plt.ylabel('Count')
+    # plt.title('Distribution of Updates per User')
+    
+    # # Distribution of updates per attribute
+    # plt.subplot(2, 3, 2)
+    # plt.hist(attribute_updates.values(), bins=20, color='green', alpha=0.7)
+    # plt.xlabel('Updates per Attribute')
+    # plt.ylabel('Count')
+    # plt.title('Distribution of Updates per Attribute')
+    
+    # # Distribution of number of attribute keys per update
+    # plt.subplot(2, 3, 3)
+    # plt.hist(attribute_keys_count, bins=20, color='red', alpha=0.7)
+    # plt.xlabel('Number of Keys per Update')
+    # plt.ylabel('Count')
+    # plt.title('Distribution of Attribute Keys per Update')
+    
+    # # Hourly update distribution
+    # plt.subplot(2, 3, 4)
+    # plt.hist(hourly_distribution, bins=24, color='purple', alpha=0.7, range=(0, 24))
+    # plt.xlabel('Hour of the Day')
+    # plt.ylabel('Count')
+    # plt.title('Distribution of Updates Over Hours')
+    
+    # # Daily update distribution
+    # plt.subplot(2, 3, 5)
+    # plt.hist(daily_distribution, bins=len(set(daily_distribution)), color='orange', alpha=0.7)
+    # plt.xlabel('Date')
+    # plt.ylabel('Count')
+    # plt.title('Distribution of Updates Over Days')
+    
+    # plt.tight_layout()
+    # plt.savefig(output_path)
+    # print(f"Visualization saved to {output_path}")
+    # plt.close()
+
     plt.figure(figsize=(18, 10))
-    
-    # Distribution of updates per user
-    plt.subplot(2, 3, 1)
-    plt.hist(user_updates.values(), bins=20, color='blue', alpha=0.7)
+
+    # Boxplot of updates per user
+    plt.subplot(1, 3, 1)
+    plt.boxplot(list(user_updates.values()))
     plt.xlabel('Updates per User')
-    plt.ylabel('Count')
-    plt.title('Distribution of Updates per User')
-    
-    # Distribution of updates per attribute
-    plt.subplot(2, 3, 2)
-    plt.hist(attribute_updates.values(), bins=20, color='green', alpha=0.7)
+    plt.title('Boxplot of Updates per User')
+    plt.grid()
+
+    plt.subplot(1, 3, 2)
+    plt.boxplot(list(attribute_updates.values()))
     plt.xlabel('Updates per Attribute')
-    plt.ylabel('Count')
-    plt.title('Distribution of Updates per Attribute')
-    
-    # Distribution of number of attribute keys per update
-    plt.subplot(2, 3, 3)
-    plt.hist(attribute_keys_count, bins=20, color='red', alpha=0.7)
+    plt.title('Boxplot of Updates per Attribute')
+    plt.grid()
+
+    plt.subplot(1, 3, 3)
+    plt.boxplot(attribute_keys_count)
     plt.xlabel('Number of Keys per Update')
-    plt.ylabel('Count')
-    plt.title('Distribution of Attribute Keys per Update')
-    
-    # Hourly update distribution
-    plt.subplot(2, 3, 4)
-    plt.hist(hourly_distribution, bins=24, color='purple', alpha=0.7, range=(0, 24))
-    plt.xlabel('Hour of the Day')
-    plt.ylabel('Count')
-    plt.title('Distribution of Updates Over Hours')
-    
-    # Daily update distribution
-    plt.subplot(2, 3, 5)
-    plt.hist(daily_distribution, bins=len(set(daily_distribution)), color='orange', alpha=0.7)
-    plt.xlabel('Date')
-    plt.ylabel('Count')
-    plt.title('Distribution of Updates Over Days')
-    
+    plt.title('Boxplot of Attribute Keys per Update')
+    plt.grid()
+
     plt.tight_layout()
-    plt.savefig(output_path)
-    print(f"Visualization saved to {output_path}")
-    
-    # Open the generated image
-    subprocess.run(["xdg-open", output_path])
-    
+    plt.savefig(output_path.replace(".png", "_boxplot.png"))
+    print(f"Boxplot visualization saved to {output_path.replace('.png', '_boxplot.png')}")
+    plt.close()
+
     return {
         "Total Number of Updates": total_updates,
         "Total Number of User IDs": total_users,
