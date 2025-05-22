@@ -1,0 +1,15 @@
+
+=== Size Occupied Summary ===
+size_func: 2.4 MiB
+docker_size: 45.1 MiB
+docker_size_apparent: 21.0 MiB
+larch_size: 7.3 MiB
+
+=== PUT SUMMARY by response type ===
+Status ALL PUT: 2640 ops, avg = 0.7511s, p25 = 0.3905s, p50 = 0.6738s, p75 = 1.0577s, p90 = 1.3665s, p99 = 1.5885s
+Status PutType.MOST_RECENT: 2640 ops, avg = 0.7511s, p25 = 0.3905s, p50 = 0.6738s, p75 = 1.0577s, p90 = 1.3665s, p99 = 1.5885s
+
+=== GET SUMMARY by response type ===
+Status ALL GET: 1155 ops, avg = 1.2447s, p25 = 0.1667s, p50 = 0.7440s, p75 = 2.1140s, p90 = 3.3394s, p99 = 4.1689s
+Status GetType.CURRENT: 1100 ops, avg = 1.2337s, p25 = 0.1654s, p50 = 0.7397s, p75 = 2.0676s, p90 = 3.3245s, p99 = 4.1715s
+Status GetType.TIMESTAMP: 55 ops, avg = 1.4650s, p25 = 0.1955s, p50 = 0.7680s, p75 = 2.9021s, p90 = 3.4136s, p99 = 4.0755s

@@ -1,0 +1,21 @@
+
+=== Size Occupied Summary ===
+customer_diff_total: 280.4 MiB
+customer_diff: 270.5 MiB
+customer_diff_indexes: 9.9 MiB
+customer_diff_pkey: 5.4 MiB
+idx_customer_diff_userid_at: 4.5 MiB
+idx_diff_at_brin: 24.0 KiB
+docker_size: 383.1 MiB
+docker_size_base: 302.4 MiB
+docker_size_wal: 80.0 MiB
+
+=== PUT SUMMARY by response type ===
+Status ALL PUT: 250880 ops, avg = 0.0085s, p25 = 0.0054s, p50 = 0.0071s, p75 = 0.0096s, p90 = 0.0138s, p99 = 0.0276s
+Status PutType.MOST_RECENT: 250880 ops, avg = 0.0085s, p25 = 0.0054s, p50 = 0.0071s, p75 = 0.0096s, p90 = 0.0138s, p99 = 0.0276s
+
+=== GET SUMMARY by response type ===
+Status ALL GET: 107587 ops, avg = 0.0093s, p25 = 0.0063s, p50 = 0.0079s, p75 = 0.0103s, p90 = 0.0144s, p99 = 0.0285s
+Status GetType.CURRENT: 102213 ops, avg = 0.0093s, p25 = 0.0063s, p50 = 0.0079s, p75 = 0.0103s, p90 = 0.0144s, p99 = 0.0284s
+Status GetType.TIMESTAMP: 3995 ops, avg = 0.0093s, p25 = 0.0064s, p50 = 0.0079s, p75 = 0.0103s, p90 = 0.0145s, p99 = 0.0293s
+Status GetType.NO_USER_AT_TIME: 1379 ops, avg = 0.0088s, p25 = 0.0056s, p50 = 0.0074s, p75 = 0.0098s, p90 = 0.0142s, p99 = 0.0294s

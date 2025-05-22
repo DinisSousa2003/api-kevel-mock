@@ -1,0 +1,22 @@
+
+=== Size Occupied Summary ===
+customer_state_total: 27.3 MiB
+customer_state: 26.3 MiB
+customer_state_indexes: 1.0 MiB
+customer_state_pkey: 552.0 KiB
+idx_state_id_at_desc: 440.0 KiB
+idx_state_at_brin: 24.0 KiB
+docker_size: 82.0 MiB
+docker_size_base: 49.3 MiB
+docker_size_wal: 32.0 MiB
+
+=== PUT SUMMARY by response type ===
+Status ALL PUT: 25099 ops, avg = 0.0259s, p25 = 0.0216s, p50 = 0.0284s, p75 = 0.0313s, p90 = 0.0343s, p99 = 0.0460s
+Status PutType.MOST_RECENT: 23928 ops, avg = 0.0256s, p25 = 0.0215s, p50 = 0.0283s, p75 = 0.0311s, p90 = 0.0337s, p99 = 0.0452s
+Status PutType.PAST: 1171 ops, avg = 0.0318s, p25 = 0.0285s, p50 = 0.0344s, p75 = 0.0380s, p90 = 0.0422s, p99 = 0.0553s
+
+=== GET SUMMARY by response type ===
+Status ALL GET: 10855 ops, avg = 0.0106s, p25 = 0.0078s, p50 = 0.0111s, p75 = 0.0129s, p90 = 0.0145s, p99 = 0.0198s
+Status GetType.CURRENT: 10301 ops, avg = 0.0106s, p25 = 0.0078s, p50 = 0.0111s, p75 = 0.0129s, p90 = 0.0145s, p99 = 0.0198s
+Status GetType.TIMESTAMP: 409 ops, avg = 0.0105s, p25 = 0.0078s, p50 = 0.0112s, p75 = 0.0129s, p90 = 0.0143s, p99 = 0.0181s
+Status GetType.NO_USER_AT_TIME: 145 ops, avg = 0.0108s, p25 = 0.0079s, p50 = 0.0113s, p75 = 0.0128s, p90 = 0.0144s, p99 = 0.0239s

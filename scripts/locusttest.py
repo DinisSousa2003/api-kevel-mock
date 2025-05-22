@@ -5,7 +5,7 @@ import requests
 # Add the project root to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from locust import HttpUser, task, constant, events
+from locust import HttpUser, constant_throughput, task, events
 import json
 import random
 import argparse
@@ -24,7 +24,7 @@ PCT_GET_NOW = 50
 DB_NAME = "xtdb2"
 TIME = 60
 USERS = 1
-RATE = 0.1 #CHANGE THIS TO CHANGE THE WAIT TIME BETWEEN REQUESTS, IT SEEMS TO BE UNCHANGED BY THE LOCUST COMMAND LINE ARGUMENTS
+RATE = 10 #CHANGE THIS TO CHANGE THE WAIT TIME BETWEEN REQUESTS, IT SEEMS TO BE UNCHANGED BY THE LOCUST COMMAND LINE ARGUMENTS
 
 START = 1733011200  # Dec 1, 2024
 END = 1743379200    # Mar 31, 2025
@@ -53,16 +53,17 @@ def init_parser(parser: argparse.ArgumentParser):
 
 @events.test_start.add_listener
 def on_test_start(environment, **kwargs):
-    global USER_MODE, PCT_GET, PCT_GET_NOW, DB_NAME, TIME, USERS
+    global USER_MODE, PCT_GET, PCT_GET_NOW, DB_NAME, TIME, USERS, RATE
     USER_MODE = environment.parsed_options.mode
     PCT_GET = environment.parsed_options.pct_get
     PCT_GET_NOW = environment.parsed_options.pct_get_now
     DB_NAME = environment.parsed_options.db
     TIME = environment.parsed_options.time
     USERS = environment.parsed_options.user_number
+    RATE = environment.parsed_options.rate
     
     print(f"\n--- Starting test with parameters ---")
-    print(f"Database: {DB_NAME}%")
+    print(f"Database: {DB_NAME}")
     print(f"Mode: {USER_MODE}")
     print(f"GET percentage: {PCT_GET}%")
     print(f"GETs as of now: {PCT_GET_NOW}%")
@@ -222,13 +223,13 @@ def on_test_stop(environment, **kwargs):
     print(f"\nSaved request time distribution plots and summary to '{output_folder}'")
 
 class ProfileUser(HttpUser):
-    wait_time = constant(RATE) #wait RATE seconds after a task
-    #THE WAIT TIME SEEMS TO BE UNCHANGED BY THE LOCUST COMMAND LINE ARGUMENTS, CHANGE IT HERE
 
     def on_start(self):
         # Open the file once and keep an iterator
         self.update_file = open("dataset/updates-0.jsonl", "r")
         self.update_lines = iter(self.update_file)
+        global RATE
+        self.wait_time = lambda: constant_throughput(RATE)(self)
 
     def on_stop(self):
         # Clean up file handle

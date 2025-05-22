@@ -16,6 +16,16 @@ set +o allexport
 
 docker rm -f "$CONTAINER_NAME"
 docker volume rm "$VOLUME_NAME"
+
+for id in $(docker ps -q)
+do
+    if [[ $(docker port "${id}") == *"5432"* ]]; then
+        echo "stopping container ${id}"
+        docker stop "${id}"
+    fi
+done
+
+
 docker volume create "$VOLUME_NAME"
 
 echo "Creating new PostgreSQL container..."

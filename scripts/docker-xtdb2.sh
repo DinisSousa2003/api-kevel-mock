@@ -12,6 +12,14 @@ docker rm -f xtdb-2
 
 sudo rm -rf /tmp/xtdb-data-dir
 
+for id in $(docker ps -q)
+do
+    if [[ $(docker port "${id}") == *"5432"* ]]; then
+        echo "stopping container ${id}"
+        docker stop "${id}"
+    fi
+done
+
 docker run -d -it --name="xtdb-2" --pull=always \
   -p 5432:5432 \
   -p 8080:8080 \
