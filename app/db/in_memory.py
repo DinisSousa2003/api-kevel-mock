@@ -1,5 +1,5 @@
 from imports.models import UserProfile
-from typing import Optional, Dict
+from typing import Optional
 from db.database import Database
 import time
 

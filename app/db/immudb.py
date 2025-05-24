@@ -4,8 +4,6 @@ from db.database import Database
 from imports.rules import Rules
 import os
 from dotenv import load_dotenv
-from imports.models import UserProfile
-from typing import Optional
 
 class immudb(Database):
 

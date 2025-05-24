@@ -1,5 +1,4 @@
 import os
-import subprocess
 import psycopg as pg
 from psycopg.types.json import Jsonb
 from psycopg.rows import dict_row

@@ -1,4 +1,3 @@
-import subprocess
 from typing import Optional
 from urllib.parse import urlparse 
 import psycopg as pg
@@ -13,6 +12,7 @@ from imports.rules import Rules
 from imports.test_helper import GetType, PutType
 import os
 from dotenv import load_dotenv
+
 class PostgreSQL(Database):
 
     def __init__(self, db_url):

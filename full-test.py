@@ -24,6 +24,7 @@ RATE = [0.1, 1, 10]
 PCT_GET = [30]
 PCT_NOW = [95]
 
+FAST_API_CONTAINER = "fastapi-app"
 def main():
     if len(sys.argv) != 1:
         print("Usage: python full-test.py")
@@ -62,24 +63,8 @@ def main():
             print("[INFO] Waiting for the database to initialize...")
             time.sleep(30)
 
-            print("[INFO] Ensuring nothing is running on port 8000...")
+            print("[INFO] Starting FASTApi Server with docker...")
 
-            # Try to find and kill any process using port 8000
-            try:
-                # macOS: use lsof; Linux: use fuser or lsof
-                result = subprocess.run(
-                    ["lsof", "-ti", ":8000"], capture_output=True, text=True, check=True
-                )
-                pids = result.stdout.strip().splitlines()
-
-                for pid in pids:
-                    print(f"[INFO] Killing process on port 8000: PID {pid}")
-                    subprocess.run(["kill", "-9", pid])
-            except subprocess.CalledProcessError:
-                print("[INFO] No process found on port 8000.")
-
-            print("[INFO] Starting FastAPI server with Uvicorn...")
-            uvicorn_process = subprocess.Popen(["uvicorn", "main:app", "--reload"])
 
             try:
                 print("[INFO] Waiting for the server to initialize...")
