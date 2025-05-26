@@ -2,6 +2,7 @@
 - Time between updates not per client on analysis
 - Terminus GET only allows one request at a time - lock on GET (?)
 - Missing test for terminus state
-- Docker container for FASTAPI
+- Compose for terminus
+- Size for XTDB from container
 - Script to read the averages and draw a plot for each database
 - Thesis writing

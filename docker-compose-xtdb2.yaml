@@ -1,18 +1,14 @@
 services:
   db:
-    image: postgres:17.4
-    container_name: postgres_compose
+    image: ghcr.io/xtdb/xtdb:2.0.0-beta6.1
+    container_name: xtdb2_compose
     restart: always
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - xtdb-data-dir:/var/lib/xtdb
     ports:
       - "5432:5432"
-    environment:
-      POSTGRES_DB: "postgres"
-      POSTGRES_USER: ${USERNAME}
-      POSTGRES_PASSWORD: ${KEY}
-      PGDATA: "/var/lib/postgresql/data"
-
+      - "8080:8080"
+      - "3000:3000"
   api:
     image: fastapiserver
     container_name: fastapi_compose
@@ -26,5 +22,6 @@ services:
       - db
     command: uvicorn main:app --host 0.0.0.0 --reload
 
+
 volumes:
-  pgdata:
+  xtdb-data-dir:
