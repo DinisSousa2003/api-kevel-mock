@@ -1,3 +1,4 @@
+import asyncio
 from fastapi import FastAPI, HTTPException
 from contextlib import asynccontextmanager
 from imports.models import UserProfile, PutResponse, GetResponse
@@ -19,27 +20,45 @@ async def startup(app: FastAPI):
     """Initialize database connection at app startup."""
     global db
 
-    if config.DEBUG:
-        db = InMemoryDB()
-        yield
-        #db.clear()
-    elif config.DATABASE_NAME == "XTDB":
-        db = XTDB(config.DATABASE_URL)
-        await db.connect()
-        yield
-        #db.clear()
-    elif config.DATABASE_NAME == "TERMINUSDB":
-        db = terminusDB(config.DATABASE_URL)
-        await db.connect()  
-        yield
-        #db.clear()
-    elif config.DATABASE_NAME == "POSTGRES":
-        db = PostgreSQL(config.DATABASE_URL)
-        await db.connect()  
-        yield
-        #db.clear()
+    for i in range(10):
+        print(f"Starting up {config.DATABASE_NAME} database connection... {i+1}/10")
+        try:
+            if config.DEBUG:
+                db = InMemoryDB()
+                yield
+                break
+                #db.clear()
+            elif config.DATABASE_NAME == "XTDB":
+                db = XTDB(config.DATABASE_URL)
+                await db.connect()
+                yield
+                break
+                #db.clear()
+            elif config.DATABASE_NAME == "TERMINUSDB":
+                db = terminusDB(config.DATABASE_URL)
+                await db.connect()  
+                yield
+                break
+                #db.clear()
+            elif config.DATABASE_NAME == "POSTGRES":
+                db = PostgreSQL(config.DATABASE_URL)
+                await db.connect()  
+                yield
+                break
+                #db.clear()
+            else:
+                raise ValueError(f"Unsupported database: {config.DATABASE_NAME}")
+            
+        except Exception as e:
+            print(f"Failed to connect to the database: {e}")
+            print("Retrying in 5 seconds...")
+            await asyncio.sleep(5)
 
 app = FastAPI(lifespan=startup)
+
+@app.get("/hello")
+async def hello():
+    return {"message": "Hello, World!"}
 
 @app.post("/populate/state")
 async def populate_from_file_state(n: int = 0, u: int = 100):

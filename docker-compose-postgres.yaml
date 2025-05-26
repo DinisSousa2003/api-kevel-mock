@@ -1,0 +1,30 @@
+services:
+  db:
+    image: postgres:17.4
+    container_name: postgres_compose
+    restart: always
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: "postgres"
+      POSTGRES_USER: ${USERNAME}
+      POSTGRES_PASSWORD: ${KEY}
+      PGDATA: "/var/lib/postgresql/data"
+
+  api:
+    image: fastapiserver
+    container_name: fastapi_compose
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      DEBUG: ${DEBUG}
+      DATABASE_NAME: ${DATABASE_NAME}
+    depends_on:
+      - db
+    command: uvicorn main:app --host 0.0.0.0 --reload
+
+volumes:
+  pgdata:
