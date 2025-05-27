@@ -1,0 +1,25 @@
+services:
+  db:
+    image: terminusdb/terminusdb-server:v11
+    container_name: terminusdb_compose
+    restart: always
+    volumes:
+      - terminusdb-data:/app/terminusdb/storage
+    ports:
+      - "6363:6363"
+  api:
+    image: fastapiserver
+    container_name: fastapi_compose
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      DEBUG: ${DEBUG}
+      DATABASE_NAME: ${DATABASE_NAME}
+    depends_on:
+      - db
+    command: uvicorn main:app --host 0.0.0.0 --reload
+
+
+volumes:
+  terminusdb-data:

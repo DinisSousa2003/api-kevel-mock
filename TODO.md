@@ -3,6 +3,6 @@
 - Terminus GET only allows one request at a time - lock on GET (?)
 - Missing test for terminus state
 - Compose for terminus
-- Size for XTDB from container
+- Size for XTDB from container (not urgent, probably will have to redo this for all containers)
 - Script to read the averages and draw a plot for each database
 - Thesis writing
