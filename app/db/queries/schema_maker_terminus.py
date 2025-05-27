@@ -64,14 +64,13 @@ class MySchema:
     def get_schema(self):
         return self.schema
     
-    def post_schema(self):
-        url = "http://db:6363/api/migration/admin/TERMINUSDB"
+    def post_schema(self, netloc, user, db_name, auth):
+        url = f"http://{netloc}/api/migration/{user}/{db_name}"
+        print(url)
         headers = {
         'Content-Type': 'application/json'
         }
         payload = json.dumps(self.get_schema())
-        username = os.getenv("USERNAME")
-        password = os.getenv("KEY")
 
-        response = requests.request("POST", url, headers=headers, data=payload, auth=HTTPBasicAuth(username, password))
+        response = requests.request("POST", url, headers=headers, data=payload, auth=auth)
         print(response.text)

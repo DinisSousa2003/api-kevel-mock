@@ -26,12 +26,14 @@ class terminusDB(Database):
 
         self.db_url = db_url
         self.get_client = None
+        self.update_client = None
         self.rules = Rules().get_all_rules()
         self.schema = MySchema(rules=self.rules)
         self.db_name = None
 
         self.user = os.getenv("USERNAME", "admin")
         self.key = os.getenv("KEY", "root")
+        self.db_name = os.getenv("DATABASE_NAME", "TERMINUSDB")
         self.auth = HTTPBasicAuth(self.user, self.key)
 
         self.API = None
@@ -41,40 +43,37 @@ class terminusDB(Database):
         parsed_url = urlparse(self.db_url) 
 
         DB_PARAMS = {
-            "scheme": parsed_url.scheme,
-            "client": parsed_url.netloc,
-            "dbname": "TERMINUSDB",  # Extracts database name
+            'scheme': parsed_url.scheme,
+            'netloc': parsed_url.netloc
         }
 
-        print(f"Connecting to: {DB_PARAMS['scheme']}://{DB_PARAMS['client']}", f"{DB_PARAMS['dbname']}")
+        print(f"Connecting to: {DB_PARAMS['scheme']}://{DB_PARAMS['netloc']}", self.db_name)
 
-        self.db_name = DB_PARAMS['dbname']
-
-        self.API = TerminusDBAPI(self.db_name, self.auth)
+        self.API = TerminusDBAPI(DB_PARAMS['netloc'], self.user, self.db_name, self.auth)
 
         try:
-            self.get_client = Client(DB_PARAMS["scheme"] + "://" + DB_PARAMS["client"])
-            self.get_client.connect(key="root", team="admin", user="admin", db=self.db_name)
+            self.get_client = Client(DB_PARAMS['scheme'] + "://" + DB_PARAMS['netloc'])
+            self.get_client.connect(key="root", team=self.user, user=self.user, db=self.db_name)
             print("Connected successfully.")
 
-            self.get_client.optimize(f'admin/{self.db_name}') # optimise database branch (here main)
-            self.get_client.optimize(f'admin/{self.db_name}/_meta') # optimise the repository graph (actually creates a squashed flat layer)
-            self.get_client.optimize(f'admin/{self.db_name}/local/_commits') # commit graph is optimised
+            self.get_client.optimize(f'{self.user}/{self.db_name}') # optimise database branch (here main)
+            self.get_client.optimize(f'{self.user}/{self.db_name}/_meta') # optimise the repository graph (actually creates a squashed flat layer)
+            self.get_client.optimize(f'{self.user}/{self.db_name}/local/_commits') # commit graph is optimised
 
-            self.update_client = Client(DB_PARAMS["scheme"] + "://" + DB_PARAMS["client"])
-            self.update_client.connect(key="root", team="admin", user="admin", db=self.db_name)
+            self.update_client = Client(DB_PARAMS['scheme'] + "://" + DB_PARAMS['netloc'])
+            self.update_client.connect(key="root", team=self.user, user=self.user, db=self.db_name)
             print("Connected successfully.")
 
-            self.update_client.optimize(f'admin/{self.db_name}') # optimise database branch (here main)
-            self.update_client.optimize(f'admin/{self.db_name}/_meta') # optimise the repository graph (actually creates a squashed flat layer)
-            self.update_client.optimize(f'admin/{self.db_name}/local/_commits') # commit graph is optimised
+            self.update_client.optimize(f'{self.user}/{self.db_name}') # optimise database branch (here main)
+            self.update_client.optimize(f'{self.user}/{self.db_name}/_meta') # optimise the repository graph (actually creates a squashed flat layer)
+            self.update_client.optimize(f'{self.user}/{self.db_name}/local/_commits') # commit graph is optimised
 
             
 
             #Check if schema has been posted, if not post
             schema = self.API.get_schema()
             if 'Stub' in schema:
-                self.schema.post_schema()
+                self.schema.post_schema(DB_PARAMS['netloc'], self.user, self.db_name, self.auth)
 
 
         except Exception as error:

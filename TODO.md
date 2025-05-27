@@ -1,9 +1,6 @@
 - Postgres is not persisting (lose the data on reload)
 - Time between updates not per client on analysis
-- Terminus GET only allows one request at a time - lock on GET (?)
 - Missing test for terminus state
-- Compose for terminus
-- Size for XTDB from container (not urgent, probably will have to redo this for all containers)
+- Size for XTDB and Terminus from container (not urgent, probably will have to redo this for all containers)
 - Script to read the averages and draw a plot for each database
 - Thesis writing
-- Change db for url given in .env for terminus schema maker and queries

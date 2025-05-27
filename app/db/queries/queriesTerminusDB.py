@@ -5,7 +5,9 @@ from requests.auth import HTTPBasicAuth
 import bisect
 
 class TerminusDBAPI():
-    def __init__(self, db_name, auth: HTTPBasicAuth):
+    def __init__(self, netloc, user, db_name, auth: HTTPBasicAuth):
+        self.netloc = netloc
+        self.user = user
         self.db_name = db_name
         self.auth = auth
 
@@ -43,7 +45,7 @@ class TerminusDBAPI():
 
 
     def get_schema(self):
-        url = f"http://db:6363/api/schema/admin/{self.db_name}"
+        url = f"http://{self.netloc}/api/schema/{self.user}/{self.db_name}"
 
         response = requests.request("GET", url, auth=self.auth)
         schema = json.loads(response.text)
@@ -51,7 +53,7 @@ class TerminusDBAPI():
         return schema
     
     def get_history(self, customer_id):
-        url = f"http://db:6363/api/history/admin/{self.db_name}?id={customer_id}"
+        url = f"http://{self.netloc}/api/history/{self.user}/{self.db_name}?id={customer_id}"
 
         response = requests.request("GET", url, auth=self.auth)
         commits = json.loads(response.text)
@@ -59,7 +61,7 @@ class TerminusDBAPI():
         return commits
 
     def get_latest_state(self, customer_id, timestamp):
-        url = f"http://db:6363/api/history/admin/{self.db_name}?id={customer_id}"
+        url = f"http://{self.netloc}/api/history/{self.user}/{self.db_name}?id={customer_id}"
 
 
         #1. Get all the commits associated with a document
