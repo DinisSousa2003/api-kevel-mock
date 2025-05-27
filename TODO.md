@@ -6,3 +6,4 @@
 - Size for XTDB from container (not urgent, probably will have to redo this for all containers)
 - Script to read the averages and draw a plot for each database
 - Thesis writing
+- Change db for url given in .env for terminus schema maker and queries

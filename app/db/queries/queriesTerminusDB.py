@@ -43,7 +43,7 @@ class TerminusDBAPI():
 
 
     def get_schema(self):
-        url = f"http://127.0.0.1:6363/api/schema/admin/{self.db_name}"
+        url = f"http://db:6363/api/schema/admin/{self.db_name}"
 
         response = requests.request("GET", url, auth=self.auth)
         schema = json.loads(response.text)
@@ -51,7 +51,7 @@ class TerminusDBAPI():
         return schema
     
     def get_history(self, customer_id):
-        url = f"http://127.0.0.1:6363/api/history/admin/{self.db_name}?id={customer_id}"
+        url = f"http://db:6363/api/history/admin/{self.db_name}?id={customer_id}"
 
         response = requests.request("GET", url, auth=self.auth)
         commits = json.loads(response.text)
@@ -59,7 +59,7 @@ class TerminusDBAPI():
         return commits
 
     def get_latest_state(self, customer_id, timestamp):
-        url = f"http://127.0.0.1:6363/api/history/admin/{self.db_name}?id={customer_id}"
+        url = f"http://db:6363/api/history/admin/{self.db_name}?id={customer_id}"
 
 
         #1. Get all the commits associated with a document

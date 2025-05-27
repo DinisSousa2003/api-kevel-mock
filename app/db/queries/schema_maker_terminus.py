@@ -65,7 +65,7 @@ class MySchema:
         return self.schema
     
     def post_schema(self):
-        url = "http://127.0.0.1:6363/api/migration/admin/terminus"
+        url = "http://db:6363/api/migration/admin/TERMINUSDB"
         headers = {
         'Content-Type': 'application/json'
         }

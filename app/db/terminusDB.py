@@ -1,4 +1,5 @@
 import time
+import threading
 from typing import Optional
 from urllib.parse import urlparse 
 from imports.rules import Rules
@@ -34,6 +35,7 @@ class terminusDB(Database):
         self.auth = HTTPBasicAuth(self.user, self.key)
 
         self.API = None
+        self.get_lock = threading.Lock()
 
     async def connect(self):
         parsed_url = urlparse(self.db_url) 
@@ -41,7 +43,7 @@ class terminusDB(Database):
         DB_PARAMS = {
             "scheme": parsed_url.scheme,
             "client": parsed_url.netloc,
-            "dbname": parsed_url.path.lstrip("/"),  # Extracts database name
+            "dbname": "TERMINUSDB",  # Extracts database name
         }
 
         print(f"Connecting to: {DB_PARAMS['scheme']}://{DB_PARAMS['client']}", f"{DB_PARAMS['dbname']}")
@@ -179,15 +181,17 @@ class terminusDB(Database):
 
             #2. If the current state is in the future from the timestamp given, we need to search in the history
             if timestamp and int(doc['at']) > timestamp:
+            
                 present_commit = self.get_client._get_current_commit()
 
                 #3. Get the latest commit at timestamp and retrieve the document in that state
                 commit = self.API.get_latest_state(id, timestamp)
 
                 if commit:
-                    self.get_client.ref = commit
-                    doc = self.get_client.get_document(id)
-                    self.get_client.ref = present_commit
+                    with self.get_lock:
+                        self.get_client.ref = commit
+                        doc = self.get_client.get_document(id)
+                        self.get_client.ref = present_commit
                     typeResponse = GetType.TIMESTAMP
                 else:
                     return (None, GetType.NO_USER_AT_TIME)

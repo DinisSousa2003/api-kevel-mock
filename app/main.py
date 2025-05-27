@@ -9,11 +9,35 @@ from db.terminusDB import terminusDB
 from db.postgres import PostgreSQL
 from typing import Optional
 from config import config
-from datetime import datetime
 import json
+import os
+import subprocess
+import shutil
 
 
 db = None
+
+def setup_terminus_schema():
+    """Setup the schema for TerminusDB if it does not exist."""
+
+    SCHEMA_PATH = "scripts/old_schema.py"
+    # Run tdbpy startproject with input
+    print(f"Creating TerminusDB project {config.DATABASE_NAME}...")
+    subprocess.run(
+        ["tdbpy", "startproject"],
+        input=f"{config.DATABASE_NAME}\n{config.DATABASE_URL}\nadmin\nN\n".encode(),
+        check=True,
+    )
+
+    # Copy schema and commit
+    if os.path.exists(SCHEMA_PATH):
+        print("Applying schema...")
+        shutil.copy(SCHEMA_PATH, "schema.py")
+        subprocess.run(["tdbpy", "commit", "-m", "Initial schema commit"], check=True)
+        os.remove("schema.py")
+        print("Schema committed.")
+    else:
+        print(f"Schema file '{SCHEMA_PATH}' not found. Skipping schema step.")
 
 @asynccontextmanager
 async def startup(app: FastAPI):
@@ -36,6 +60,7 @@ async def startup(app: FastAPI):
                 #db.clear()
             elif config.DATABASE_NAME == "TERMINUSDB":
                 db = terminusDB(config.DATABASE_URL)
+                setup_terminus_schema()
                 await db.connect()  
                 yield
                 break

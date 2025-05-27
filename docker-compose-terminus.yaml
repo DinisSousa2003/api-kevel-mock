@@ -16,9 +16,11 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       DEBUG: ${DEBUG}
       DATABASE_NAME: ${DATABASE_NAME}
+      USERNAME: ${USERNAME}
+      KEY: ${KEY}
     depends_on:
       - db
-    command: uvicorn main:app --host 0.0.0.0 --reload
+    command: uvicorn main:app --host 0.0.0.0
 
 
 volumes:
