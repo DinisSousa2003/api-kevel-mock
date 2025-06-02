@@ -16,7 +16,7 @@ import sys
 import time
 
 #VALID_DATABASES = ["postgres", xtdb2", "terminus"]
-VALID_DATABASES = ["postgres"]
+VALID_DATABASES = ["xtdb2"]
 MODE = ["diff", "state"]
 TOTAL_TIME = [1]  # in minutes
 USERS = [1, 10]
@@ -63,7 +63,7 @@ def main():
                             "up", "-d", "--build"], check=True)
 
             print("[INFO] Waiting for the database to initialize...")
-            time.sleep(30)
+            time.sleep(50)
 
             print("[INFO] Starting FASTApi Server with docker...")
 

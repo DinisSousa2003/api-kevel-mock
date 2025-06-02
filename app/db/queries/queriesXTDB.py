@@ -21,8 +21,6 @@ class QueryState():
     
     SELECT_ALL_CURRENT = """SELECT * FROM customer_state;"""
 
-    SELECT_ALL_CURRENT_ATTR = """SELECT * EXCLUDE _id FROM customer_state WHERE _id=%s;"""
-
     SELECT_NESTED_ARGUMENTS = """SELECT c._id, (c.attributes)."7a9ec0f97cd6f47b044e72673d493a68" FROM customer_state FOR ALL SYSTEM_TIME FOR ALL VALID_TIME AS c;"""
 
     SELECT_ALL_WITH_TIMES = """SELECT c.*, _valid_from, _valid_to, _system_from, _system_to FROM customer_state FOR ALL SYSTEM_TIME FOR ALL VALID_TIME AS c;"""
@@ -39,23 +37,11 @@ class QueryState():
              FOR VALID_TIME AS OF %s AS c 
              WHERE _id = %s;"""
 
-    def PATCH_WITH_TIME(attributes):
-        return f"""PATCH INTO customer_state FOR VALID_TIME FROM %s RECORDS {{_id: %s, attributes: {json.dumps(attributes)}}};"""
-    
-    INSERT_UPDATE = """INSERT INTO customer_state RECORDS {_id: %s, attributes: %s};"""
-
     INSERT_WITH_TIME = """INSERT INTO customer_state RECORDS {_id: %s, attributes: %s, _valid_from: %s};"""
     
     INSERT_WITH_TIME_PERIOD = """INSERT INTO customer_state RECORDS {_id: %s, attributes: %s, _valid_from: %s, _valid_to: %s};"""
 
     SELECT_SIZE = """SELECT sum(data_file_size) FROM xt.trie_stats WHERE trie_state = 'live';"""
-
-    # def PATCH_MOST_RECENT(attr, value):
-    #     return f"""PATCH INTO customer_state FOR VALID_TIME FROM %s RECORDS {{_id: %s, "{attr}": {value} }};"""
-    
-    # def PATCH_SUM(attr, value, current_value):
-    #     new_value = value + current_value
-    #     return f"""PATCH INTO customer_state FOR VALID_TIME FROM %s RECORDS {{_id: %s, "{attr}": {new_value}}};"""
     
 class QueryDiff():
 
