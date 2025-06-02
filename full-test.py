@@ -16,9 +16,9 @@ import sys
 import time
 
 #VALID_DATABASES = ["postgres", xtdb2", "terminus"]
-VALID_DATABASES = ["postgres", "xtdb2", "terminus"]
+VALID_DATABASES = ["postgres"]
 MODE = ["diff", "state"]
-TOTAL_TIME = [60]  # in minutes
+TOTAL_TIME = [1]  # in minutes
 USERS = [1, 10]
 RATE = [0.1, 1, 10]
 PCT_GET = [30]
@@ -44,7 +44,7 @@ def main():
             sys.exit(1)
 
         #3. Check if the docker script exists
-        docker_script = f"./scripts/docker-{database}.sh"
+        docker_script = f"docker-compose-{database}.yaml"
         if not os.path.isfile(docker_script):
             print(f"[ERROR] Docker script {docker_script} not found.")
             sys.exit(1)
@@ -58,13 +58,14 @@ def main():
 
         for mode, pct_get, pct_now, tt, users, rate in itertools.product(MODE, PCT_GET, PCT_NOW, TOTAL_TIME, USERS, RATE):
             print(f"[INFO] Running Docker setup: {docker_script}")
-            subprocess.run(["bash", docker_script], check=True)
+            subprocess.run(["docker", "compose",
+                            "-f", docker_script,
+                            "up", "-d", "--build"], check=True)
 
             print("[INFO] Waiting for the database to initialize...")
             time.sleep(30)
 
             print("[INFO] Starting FASTApi Server with docker...")
-
 
             try:
                 print("[INFO] Waiting for the server to initialize...")
@@ -92,8 +93,12 @@ def main():
 
             finally:
                 print("[INFO] Terminating Uvicorn server...")
-                uvicorn_process.kill()
-                uvicorn_process.wait()
+                subprocess.run(["docker", "compose",
+                            "-f", docker_script,
+                            "down", "-v"], check=True)
+                
+                print("[INFO] Waiting for the database to decompose...")
+                time.sleep(30)
 
 if __name__ == "__main__":
     main()

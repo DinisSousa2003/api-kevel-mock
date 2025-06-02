@@ -1,6 +1,7 @@
+- TOP PRIORITY: Think of what is needed to update the future states on the most-recent and older attibutes: OLDER needs to know the value on the last state (not the value of the update). MOST-RECENT needs to know the timestamp of the update added the value there (tuple value timestamp).
 - Postgres is not persisting (lose the data on reload)
 - Time between updates not per client on analysis
-- Missing test for terminus state
+- Missing test for all terminus (state + others had not good merge)
 - Size for XTDB and Terminus from container (not urgent, probably will have to redo this for all containers)
 - Script to read the averages and draw a plot for each database
 - Thesis writing

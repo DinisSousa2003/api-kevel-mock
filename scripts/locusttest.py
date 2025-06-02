@@ -10,11 +10,22 @@ import json
 import random
 import argparse
 from collections import defaultdict
-from imports.test_helper import GetType, PutType
 import locust.stats
 import matplotlib.pyplot as plt
 import numpy as np
 locust.stats.CONSOLE_STATS_INTERVAL_SEC = 600
+from enum import Enum
+
+
+class PutType(Enum):
+    PAST = 1
+    MOST_RECENT = 2
+    NO_UPDATE = 3
+
+class GetType(Enum):
+    CURRENT = 1
+    TIMESTAMP = 2
+    NO_USER_AT_TIME = 3
 
 
 # Command-line argument placeholders
