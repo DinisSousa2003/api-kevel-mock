@@ -1,9 +1,11 @@
 SERVER_MACHINE="ubuntu@ec2-13-219-246-81.compute-1.amazonaws.com"
 
+ssh -i ~/.ssh/id_ed25519 $SERVER_MACHINE "mkdir -p ~/code ~/code/envs ~/code/app"
+
 #COPY NEEDED FILES
-scp -i ~/.ssh/id_ed25519 -r ./requirements.txt $SERVER_MACHINE:~/code
-scp -i ~/.ssh/id_ed25519 -r Dockerfile $SERVER_MACHINE:~/code
-scp -i ~/.ssh/id_ed25519 -r ./aws/envs $SERVER_MACHINE:~/code/envs
+scp -i ~/.ssh/id_ed25519 -r  ./requirements.txt $SERVER_MACHINE:~/code/requirements.txt
+scp -i ~/.ssh/id_ed25519 -r  Dockerfile $SERVER_MACHINE:~/code/Dockerfile
+scp -i ~/.ssh/id_ed25519 -r  ./aws/envs $SERVER_MACHINE:~/code
 
 rsync -avz -e "ssh -i ~/.ssh/id_ed25519" --exclude='__pycache__' ./app/ $SERVER_MACHINE:~/code/app
 
