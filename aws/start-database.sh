@@ -1,14 +1,10 @@
-SERVER_MACHINE="ubuntu@ec2-13-219-246-81.compute-1.amazonaws.com"
+DATABASE_MACHINE="ubuntu@ec2-44-222-181-38.compute-1.amazonaws.com"
 
 #COPY NEEDED FILES
-scp -i ~/.ssh/id_ed25519 -r ./requirements.txt $SERVER_MACHINE:~/code
-scp -i ~/.ssh/id_ed25519 -r Dockerfile $SERVER_MACHINE:~/code
-scp -i ~/.ssh/id_ed25519 -r ./aws/envs $SERVER_MACHINE:~/code/envs
-
-rsync -avz -e "ssh -i ~/.ssh/id_ed25519" --exclude='__pycache__' ./app/ $SERVER_MACHINE:~/code/app
+scp -i ~/.ssh/id_ed25519 -r ./aws/database-scripts $DATABASE_MACHINE:~/code
 
 #ENTER THE MACHINE
-ssh -o "IdentitiesOnly=yes" -i ~/.ssh/id_ed25519 $SERVER_MACHINE << 'EOF'
+ssh -o "IdentitiesOnly=yes" -i ~/.ssh/id_ed25519 $DATABASE_MACHINE << 'EOF'
 
 #RUN ALL COMMANDS INSIDE MACHINE
 
@@ -30,9 +26,4 @@ sudo apt install -y docker-ce docker-ce-cli containerd.io
 
 sudo usermod -aG docker $USER
 
-EOF
-
-ssh -o "IdentitiesOnly=yes" -i ~/.ssh/id_ed25519 $SERVER_MACHINE << 'EOF'
-cd ~/code
-docker build -t my-api .
 EOF
