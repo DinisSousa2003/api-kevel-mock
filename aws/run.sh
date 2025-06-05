@@ -61,16 +61,16 @@ EOF
 
 sleep 10 #wait for the server to start
 
-Start the locust on the locust machine
+# Start the locust on the locust machine
 echo "Starting locust on $LOCUST_MACHINE..."
 ssh -T -o "IdentitiesOnly=yes" -i ~/.ssh/id_ed25519 $LOCUST_MACHINE << EOF
 cd ~/code
 
-OUTPUT_FOLDER=output/${DB_NAME}/${MODE}/time-${RUN_TIME}-users-${USERS}-gpt-${PCT_GET}-now-${PCT_NOW}-rate-${RATE}
-mkdir -p "\$OUTPUT_FOLDER"
+mkdir -p output
 
 docker run --rm \
-    -v "$PWD/$OUTPUT_FOLDER:/app/output" \
+    --name locust \
+    --mount type=bind,src=/home/ubuntu/code/output,dst=/app/output \
     locust \
     locust \
     -f locusttest-aws.py \

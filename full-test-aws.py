@@ -19,12 +19,11 @@ import time
 VALID_DATABASES = ["postgres", "xtdb2", "terminus"]
 MODE = ["diff", "state"]
 TOTAL_TIME = [1]  # in minutes
-USERS = [1, 10]
+USERS = [1]
 RATE = [0.1, 1, 10]
 PCT_GET = [30]
-PCT_NOW = [95]
+PCT_NOW = [95, 100]
 
-FAST_API_CONTAINER = "fastapi-app"
 def main():
     if len(sys.argv) != 1:
         print("Usage: python full-test-aws.py")
@@ -39,44 +38,32 @@ def main():
             print(f"[ERROR] Docker script {aws_script} not found.")
             sys.exit(1)
 
-        test_script = "./scripts/locusttest.py"
-        if not os.path.isfile(test_script):
-            print(f"[ERROR] Test script {test_script} not found.")
-            sys.exit(1)
+        os.makedirs(f"output-aws/", exist_ok=True)
 
-        os.makedirs(f"output-aws/{database}", exist_ok=True)
-
+        #3. Run tests for all combinations of parameters
+        print(f"[INFO] Running tests for database: {database}")
         for mode, pct_get, pct_now, tt, users, rate in itertools.product(MODE, PCT_GET, PCT_NOW, TOTAL_TIME, USERS, RATE):
-            print(f"[INFO] Running Docker setup: {aws_script}")
-            subprocess.run([aws_script, database])
-
+            
             try:
-                print("[INFO] Waiting for the server to initialize...")
-                time.sleep(10)
+                print(f"[INFO] Running aws script: {aws_script}")
+                subprocess.run([aws_script, database, mode, str(pct_get), str(pct_now), str(tt), str(users), str(rate)], check=True)
 
-                locust_command = [
-                        "locust",
-                        "-f", test_script,
-                        "--headless",
-                        "-u", str(users),
-                        "--run-time", f"{tt}m",
-                        "--mode", mode,
-                        "--pct-get", str(pct_get),
-                        "--pct-get-now", str(pct_now),
-                        "--db", database,
-                        "--time", str(tt),
-                        "--user-number", str(users),
-                        "--rate", str(rate),
-                        "--host", "http://13.219.246.81:8000"
-                    ]
 
-                print(f"[INFO] Running test with mode={mode}, tt={tt}, get={pct_get}, now={pct_now}, number of users={users}")
-
-                subprocess.run(locust_command)
+            except subprocess.CalledProcessError as e:
+                print(f"[ERROR] Docker setup failed: {e}")
+                continue
 
             finally:
                 #Wait for do over
                 time.sleep(10)
+
+    #4. Get the output folder from the locust machine
+    print("[INFO] Fetching all output from Locust machine...")
+    try:
+        subprocess.run(["./aws/fetch-all-output.sh"], check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"[ERROR] Fetching full output failed: {e}")
+        
 
 if __name__ == "__main__":
     main()
