@@ -6,25 +6,56 @@ ec2-13-219-246-81.compute-1.amazonaws.com
 ec2-44-222-181-38.compute-1.amazonaws.com
 ec2-44-202-179-1.compute-1.amazonaws.com
 
-## FASTAPI
-ssh -o "IdentitiesOnly=yes" -i ~/.ssh/id_ed25519 ubuntu@ec2-13-219-246-81.compute-1.amazonaws.com \\
-10.0.63.154 172.17.0.1 
+## SERVER FASTAPI
 
-### Structure
+```bash
+ssh -o "IdentitiesOnly=yes" -i ~/.ssh/id_ed25519 ubuntu@ec2-13-219-246-81.compute-1.amazonaws.com
+```
+
+Private: 10.0.63.154
+
+### Structure-SERVER
+
 code -> Dockerfile, /app, requirements.txt, /envs
 
 ## DATABASE
-ssh -o "IdentitiesOnly=yes" -i ~/.ssh/id_ed25519 ubuntu@ec2-44-222-181-38.compute-1.amazonaws.com
-10.0.53.50
 
-### Structure
+```bash
+ssh -o "IdentitiesOnly=yes" -i ~/.ssh/id_ed25519 ubuntu@ec2-44-222-181-38.compute-1.amazonaws.com
+```
+
+Private: 10.0.53.50
+
+### Structure-DATABASE
+
 code -> Dockerfile, app, requirements.txt
 
 ## LOCUST
+
+```bash
 ssh -o "IdentitiesOnly=yes" -i ~/.ssh/id_ed25519 ubuntu@ec2-44-202-179-1.compute-1.amazonaws.com
-10.0.60.7 
+
+locust_command = [
+    "docker", "run", "--rm",
+    "locust",  # your image name; replace if needed
+    "-f", "locusttest-aws.py",  # already in the container
+    "--run-time", f"{tt}m",
+    "--mode", mode,
+    "--pct-get", str(pct_get),
+    "--pct-get-now", str(pct_now),
+    "--db", database,
+    "--time", str(tt),
+    "--user-number", str(users),
+    "--rate", str(rate),
+    "--host", "http://127.0.0.1:8000"
+]
+```
+
+Private: 10.0.60.7
+
+### TODO
 
 - [x] Server running
 - [x] Pinging from other EC2 instance to server
-- [ ] Connect server with database
-- 
+- [x] Connect server with database
+- [ ] Sending requests from my computer

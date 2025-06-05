@@ -33,7 +33,7 @@ class terminusDB(Database):
 
         self.user = os.getenv("USERNAME", "admin")
         self.key = os.getenv("KEY", "root")
-        self.db_name = "terminus"
+        self.db_name = os.getenv("DATABASE_NAME", "terminus")
         self.auth = HTTPBasicAuth(self.user, self.key)
 
         self.API = None

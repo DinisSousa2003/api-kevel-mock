@@ -7,4 +7,3 @@ click
 terminus
 terminusdb-client
 sortedcontainers
-locust

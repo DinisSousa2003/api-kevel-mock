@@ -1,3 +1,5 @@
+# README
+
 ## File structure
 
 - `/docs`: .md files with instructions
@@ -8,16 +10,15 @@
 - `/imports`: files with models and classes to be imported by other files
 - `/dataset`: where the files should be. Uncommited to github to reduce size of repo
 
-
 ## Run tests
 
-```
+```bash
 python3 full-test.py <terminus|xtdb2|postgres>
 ```
 
 ## How to get size of DB
 
-- Postgres: Use the endpoint users/<mode>/db/size. More on the functions used in ([Postgres Documentation](https://www.postgresql.org/docs/current/functions-admin.html#FUNCTIONS-ADMIN-DBSIZE))
+- Postgres: Use the endpoint users/\<mode\>/db/size. More on the functions used in ([Postgres Documentation](https://www.postgresql.org/docs/current/functions-admin.html#FUNCTIONS-ADMIN-DBSIZE))
 - TerminusDB: Use the docker volume size: `docker run --rm -v terminusdb-data:/data alpine du -sh /data` to get full size and size() to get in-memory size of layer (need to run the symlinks script first)
 - XTDB: TODO
 
@@ -49,9 +50,8 @@ python3 full-test.py <terminus|xtdb2|postgres>
 | **postgresql.conf** | Main server configuration file for parameters (edited manually). |
 | **postmaster.opts** | Internal file with startup options used by the `postmaster` process. |
 
-
-
 ## Characteristics (TODO)
+
 Updates to the past
 Updates to the future (past now)
 Query present

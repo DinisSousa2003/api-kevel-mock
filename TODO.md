@@ -1,6 +1,8 @@
-- SIZE OF DATABASE VOLUME: Get it to work between containers
-- CHANGE XTDB2 from local tmp to volume SIZE FUNCTION
-- Script to set up on AWS
+# TODO
+
+- WRITE OUTPUT FROM LOCUST CONTAINER TO FILESYSTEM
+- READ RESULTS FROM LOCUST FILESYSTEM
+- SCRIPTS FOR SIZE WORKING
 
 - BUGFIX: Think of what is needed to update the future states on the most-recent and older attibutes: OLDER needs to know the value on the last state (not the value of the update). MOST-RECENT needs to know the timestamp of the update added the value there (tuple value timestamp). (does not affect the outcome/test result, just correctness)
 

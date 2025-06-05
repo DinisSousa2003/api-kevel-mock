@@ -58,7 +58,7 @@ async def startup(app: FastAPI):
                 yield
                 break
                 #db.clear()
-            elif config.DATABASE_NAME == "TERMINUSDB":
+            elif config.DATABASE_NAME == "terminus":
                 db = terminusDB(config.DATABASE_URL)
                 setup_terminus_schema()
                 await db.connect()  

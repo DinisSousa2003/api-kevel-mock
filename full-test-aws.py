@@ -15,8 +15,8 @@ import subprocess
 import sys
 import time
 
-#VALID_DATABASES = ["postgres", xtdb2", "terminus"]
-VALID_DATABASES = ["xtdb2"]
+#VALID_DATABASES = ["postgres", "xtdb2", "terminus"]
+VALID_DATABASES = ["postgres", "xtdb2", "terminus"]
 MODE = ["diff", "state"]
 TOTAL_TIME = [1]  # in minutes
 USERS = [1, 10]
@@ -27,26 +27,16 @@ PCT_NOW = [95]
 FAST_API_CONTAINER = "fastapi-app"
 def main():
     if len(sys.argv) != 1:
-        print("Usage: python full-test.py")
+        print("Usage: python full-test-aws.py")
         sys.exit(1)
 
     #1. Iterate trough the databases
     for database in VALID_DATABASES:
 
-        #2. Copy the file envs/<database-name>.env to .env
-        src_env = f"envs/{database}.env"
-        dst_env = ".env"
-        try:
-            shutil.copy(src_env, dst_env)
-            print(f"[INFO] Copied {src_env} to {dst_env}")
-        except FileNotFoundError:
-            print(f"[ERROR] {src_env} not found.")
-            sys.exit(1)
-
-        #3. Check if the docker script exists
-        docker_script = f"docker-compose-{database}.yaml"
-        if not os.path.isfile(docker_script):
-            print(f"[ERROR] Docker script {docker_script} not found.")
+        #2. Check if the bash script exists
+        aws_script = f"./aws/run.sh"
+        if not os.path.isfile(aws_script):
+            print(f"[ERROR] Docker script {aws_script} not found.")
             sys.exit(1)
 
         test_script = "./scripts/locusttest.py"
@@ -54,18 +44,11 @@ def main():
             print(f"[ERROR] Test script {test_script} not found.")
             sys.exit(1)
 
-        os.makedirs(f"output/{database}", exist_ok=True)
+        os.makedirs(f"output-aws/{database}", exist_ok=True)
 
         for mode, pct_get, pct_now, tt, users, rate in itertools.product(MODE, PCT_GET, PCT_NOW, TOTAL_TIME, USERS, RATE):
-            print(f"[INFO] Running Docker setup: {docker_script}")
-            subprocess.run(["docker", "compose",
-                            "-f", docker_script,
-                            "up", "-d", "--build"], check=True)
-
-            print("[INFO] Waiting for the database to initialize...")
-            time.sleep(50)
-
-            print("[INFO] Starting FASTApi Server with docker...")
+            print(f"[INFO] Running Docker setup: {aws_script}")
+            subprocess.run([aws_script, database])
 
             try:
                 print("[INFO] Waiting for the server to initialize...")
@@ -84,7 +67,7 @@ def main():
                         "--time", str(tt),
                         "--user-number", str(users),
                         "--rate", str(rate),
-                        "--host", "http://127.0.0.1:8000"
+                        "--host", "http://13.219.246.81:8000"
                     ]
 
                 print(f"[INFO] Running test with mode={mode}, tt={tt}, get={pct_get}, now={pct_now}, number of users={users}")
@@ -92,13 +75,8 @@ def main():
                 subprocess.run(locust_command)
 
             finally:
-                print("[INFO] Terminating Uvicorn server...")
-                subprocess.run(["docker", "compose",
-                            "-f", docker_script,
-                            "down", "-v"], check=True)
-                
-                print("[INFO] Waiting for the database to decompose...")
-                time.sleep(30)
+                #Wait for do over
+                time.sleep(10)
 
 if __name__ == "__main__":
     main()

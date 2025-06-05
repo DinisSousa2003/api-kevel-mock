@@ -1,13 +1,26 @@
 #!/bin/bash
 
+DATABASE_MACHINE="ubuntu@ec2-44-222-181-38.compute-1.amazonaws.com"
+SERVER_MACHINE="ubuntu@ec2-13-219-246-81.compute-1.amazonaws.com"
+LOCUST_MACHINE="ubuntu@ec2-44-202-179-1.compute-1.amazonaws.com"
+SERVER_PRIVATE_IP="10.0.63.154"
+
 # Usage: ./run.sh <database_name>
 
-if [ $# -ne 1 ]; then
-    echo "Usage: $0 <database_name>"
+# Usage: ./run.sh <database_name> <run_time> <mode> <pct_get> <pct_get_now> <time<user_number> <rate>
+
+if [ $# -ne 7 ]; then
+    echo "Usage: $0 <database_name> <run_time_mins> <mode> <pct_get> <pct_get_now> <user_number> <rate>"
     exit 1
 fi
 
 DB_NAME="$1"
+RUN_TIME="$2"
+MODE="$3"
+PCT_GET="$4"
+PCT_NOW="$5"
+USERS="$6"
+RATE="$7"
 
 #DB_NAME must be one of the following:
 VALID_DB_NAMES=("postgres" "xtdb2" "terminus")
@@ -17,20 +30,18 @@ if [[ ! " ${VALID_DB_NAMES[@]} " =~ " ${DB_NAME} " ]]; then
 fi
 
 # Define your EC2 instance hostnames or IPs
-DATABASE_MACHINE="ubuntu@ec2-44-222-181-38.compute-1.amazonaws.com"
-SERVER_MACHINE="ubuntu@ec2-13-219-246-81.compute-1.amazonaws.com"
 
 # Start the database on the DB machine
 echo "Starting database '$DB_NAME' on $DATABASE_MACHINE..."
 ssh -T -o "IdentitiesOnly=yes" -i ~/.ssh/id_ed25519 $DATABASE_MACHINE << EOF
 
-bash ~/code/"$DB_NAME".sh
+bash ~/code/database-scripts/"$DB_NAME".sh
 EOF
 
 sleep 30 #needed becuase xtdb takes a while to start
 
 # Copy the correct .env file to the server machine
-echo "Copying .env file for '$DB_NAME' to $SERVER_MACHINE..."
+echo "Copying .env file for '$DB_NAME' and starting server on $SERVER_MACHINE..."
 ssh -T -o "IdentitiesOnly=yes" -i ~/.ssh/id_ed25519 $SERVER_MACHINE << EOF
 
 for id in \$(docker ps -q)
@@ -45,5 +56,35 @@ cp ~/code/envs/"$DB_NAME".env ~/code/.env
 
 cd ~/code
 
-docker run --env-file .env -p 8000:8000 my-api
+docker run --env-file .env -d -p 8000:8000 my-api
 EOF
+
+sleep 10 #wait for the server to start
+
+Start the locust on the locust machine
+echo "Starting locust on $LOCUST_MACHINE..."
+ssh -T -o "IdentitiesOnly=yes" -i ~/.ssh/id_ed25519 $LOCUST_MACHINE << EOF
+cd ~/code
+
+OUTPUT_FOLDER=output/${DB_NAME}/${MODE}/time-${RUN_TIME}-users-${USERS}-gpt-${PCT_GET}-now-${PCT_NOW}-rate-${RATE}
+mkdir -p "\$OUTPUT_FOLDER"
+
+docker run --rm \
+    -v "$PWD/$OUTPUT_FOLDER:/app/output" \
+    locust \
+    locust \
+    -f locusttest-aws.py \
+    --run-time "${RUN_TIME}m" \
+    --headless \
+    -u "$USERS" \
+    --mode "$MODE" \
+    --pct-get "$PCT_GET" \
+    --pct-get-now "$PCT_NOW" \
+    --db "$DB_NAME" \
+    --time "$RUN_TIME" \
+    --user-number "$USERS" \
+    --rate "$RATE" \
+    --host "http://$SERVER_PRIVATE_IP:8000"
+EOF
+
+

@@ -1,12 +1,10 @@
-DATABASE_MACHINE="ubuntu@ec2-44-222-181-38.compute-1.amazonaws.com"
+LOCUST_MACHINE="ubuntu@ec2-44-202-179-1.compute-1.amazonaws.com"
 
-ssh -i ~/.ssh/id_ed25519 $DATABASE_MACHINE "mkdir -p ~/code"
+ssh -i ~/.ssh/id_ed25519 $LOCUST_MACHINE "mkdir -p ~/code"
 
-#COPY NEEDED FILES
-scp -i ~/.ssh/id_ed25519 -r ./aws/database-scripts $DATABASE_MACHINE:~/code
+rsync -avz -e "ssh -i ~/.ssh/id_ed25519" ./aws/locust/ $LOCUST_MACHINE:~/code
 
-#ENTER THE MACHINE
-ssh -o "IdentitiesOnly=yes" -i ~/.ssh/id_ed25519 $DATABASE_MACHINE << 'EOF'
+ssh -o "IdentitiesOnly=yes" -i ~/.ssh/id_ed25519 $LOCUST_MACHINE << 'EOF'
 
 #RUN ALL COMMANDS INSIDE MACHINE
 
@@ -18,6 +16,7 @@ sudo mkdir -p /etc/apt/keyrings
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | \
   sudo gpg --batch --yes --dearmor -o /etc/apt/keyrings/docker.gpg
 
+
 echo \
   "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
   https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | \
@@ -28,4 +27,9 @@ sudo apt install -y docker-ce docker-ce-cli containerd.io
 
 sudo usermod -aG docker $USER
 
+EOF
+
+ssh -o "IdentitiesOnly=yes" -i ~/.ssh/id_ed25519 $LOCUST_MACHINE << 'EOF'
+cd ~/code
+docker build -t locust .
 EOF
