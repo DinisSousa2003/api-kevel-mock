@@ -20,7 +20,7 @@ VALID_DATABASES = ["postgres", "xtdb2", "terminus"]
 MODE = ["diff", "state"]
 TOTAL_TIME = [1]  # in minutes
 USERS = [1]
-RATE = [0.1, 1, 10]
+RATE = [10]
 PCT_GET = [30]
 PCT_NOW = [95, 100]
 

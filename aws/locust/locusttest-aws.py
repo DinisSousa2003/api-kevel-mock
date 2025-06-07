@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 locust.stats.CONSOLE_STATS_INTERVAL_SEC = 600
 from enum import Enum
-
+import gevent
 
 class PutType(Enum):
     PAST = 1
@@ -35,20 +35,39 @@ PCT_GET_NOW = 50
 DB_NAME = "xtdb2"
 TIME = 60
 USERS = 1
-RATE = 10 #CHANGE THIS TO CHANGE THE WAIT TIME BETWEEN REQUESTS, IT SEEMS TO BE UNCHANGED BY THE LOCUST COMMAND LINE ARGUMENTS
+RATE = 10
+HOST = "http://10.0.63.154:8000/users"
 
 START = 1733011200  # Dec 1, 2024
 END = 1743379200    # Mar 31, 2025
+
+db_size_greenlet = None
 
 put_request_times = defaultdict(list)
 get_request_times = defaultdict(list)
 
 headers = {'Content-Type': 'application/json'}
 
+running_check = True
+
 user_id_set = set()
 
 def random_timestamp(start, end):
     return (start + random.randint(0, end - start)) * 1000
+
+def periodic_db_size_check(host):
+    global running_check
+    while running_check:
+        try:
+            response = requests.get(f"{host}/users/{USER_MODE}/db/size/")
+            if response.status_code == 200:
+                size = response.json().get("size", "unknown")
+                print(f"[DB SIZE CHECK] Current size of {DB_NAME}: {size} bytes")
+            else:
+                print(f"[DB SIZE CHECK] Failed to get size for {DB_NAME}: {response.status_code}")
+        except Exception as e:
+            print(f"[DB SIZE CHECK] Error checking database size: {e}")
+        gevent.sleep(3600)  # Check every hour
 
 @events.init_command_line_parser.add_listener
 def init_parser(parser: argparse.ArgumentParser):
@@ -62,7 +81,7 @@ def init_parser(parser: argparse.ArgumentParser):
 
 @events.test_start.add_listener
 def on_test_start(environment, **kwargs):
-    global USER_MODE, PCT_GET, PCT_GET_NOW, DB_NAME, TIME, USERS, RATE
+    global USER_MODE, PCT_GET, PCT_GET_NOW, DB_NAME, TIME, USERS, RATE, HOST, db_size_greenlet
     USER_MODE = environment.parsed_options.mode
     PCT_GET = environment.parsed_options.pct_get
     PCT_GET_NOW = environment.parsed_options.pct_get_now
@@ -70,6 +89,10 @@ def on_test_start(environment, **kwargs):
     TIME = environment.parsed_options.time
     USERS = environment.parsed_options.user_number
     RATE = environment.parsed_options.rate
+    HOST = environment.host
+
+    # Start background monitoring size task
+    db_size_greenlet = gevent.spawn(periodic_db_size_check, HOST)
     
     print(f"\n--- Starting test with parameters ---")
     print(f"Database: {DB_NAME}")
@@ -86,14 +109,12 @@ def on_test_stop(environment, **kwargs):
     output_folder = f"output/{DB_NAME}/{USER_MODE}/time-{TIME}-users-{USERS}-gpt-{PCT_GET}-now-{PCT_GET_NOW}-rate-{RATE}"
     os.makedirs(output_folder, exist_ok=True)
 
-    # url = USER_ENDPOINT + USER_MODE + "/db/size"
-    # response = requests.get(url)
+    #Stop checking size (run one last time?)
+    global running_check
+    running_check = False
+    db_size_greenlet.kill()
 
     summary_lines = []
-
-    # summary_lines.append("\n=== Size Occupied Summary ===")
-    # for name, size in response.json().items():
-    #     summary_lines.append(f"{name}: {size}")
 
     summary_lines.append("\n=== PUT SUMMARY by response type ===")
     #All PUT requests

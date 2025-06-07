@@ -1,3 +1,4 @@
+import subprocess
 from typing import Optional
 from urllib.parse import urlparse 
 import psycopg as pg
@@ -6,7 +7,7 @@ from psycopg.rows import dict_row
 from datetime import datetime, timezone
 from db.database import Database
 from db.queries.queriesPostgres import QueryState, QueryDiff
-from db.queries.helper import merge_with_past, merge_with_future, readable_size, docker_du
+from db.queries.helper import merge_with_past, merge_with_future, readable_size, get_size_script
 from imports.models import UserProfile
 from imports.rules import Rules
 from imports.test_helper import GetType, PutType
@@ -203,11 +204,11 @@ class PostgreSQL(Database):
             rows = await cur.fetchall()
             size_dict = {item['name']: readable_size(item['size']) for item in rows}
 
-            size_dict["docker_size"] = readable_size(docker_du("pgdata:/data", "/data"))
-            size_dict["docker_size_base"] = readable_size(docker_du("pgdata:/data", "/data/base"))
-            size_dict["docker_size_wal"] = readable_size(docker_du("pgdata:/data", "/data/pg_wal"))
+        # Add Docker size metrics from the external shell script
+        docker_sizes = get_size_script("postgres")
+        size_dict.update(docker_sizes)
 
-            return size_dict
+        return size_dict
     
 
 ##########################DIFF BASED FUNCTIONS#################################################
@@ -285,8 +286,8 @@ class PostgreSQL(Database):
             rows = await cur.fetchall()
             size_dict = {item['name']: readable_size(item['size']) for item in rows}
 
-            size_dict["docker_size"] = readable_size(docker_du("pgdata:/data", "/data"))
-            size_dict["docker_size_base"] = readable_size(docker_du("pgdata:/data", "/data/base"))
-            size_dict["docker_size_wal"] = readable_size(docker_du("pgdata:/data", "/data/pg_wal"))
+        # Add Docker size metrics from the external shell script
+        docker_sizes = get_size_script("postgres")
+        size_dict.update(docker_sizes)
 
-            return size_dict
+        return size_dict

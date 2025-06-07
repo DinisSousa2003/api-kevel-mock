@@ -64,6 +64,30 @@ def merge_with_future(future, attributes, rules):
 
     return future
 
+def get_size_script(database_name):
+    size_dict = dict()
+    # Run remote shell script via subprocess
+    try:
+        result = subprocess.check_output(
+            [
+                "bash", f"scripts/get-size-{database_name}.sh"
+            ],
+            stderr=subprocess.STDOUT,
+            text=True
+        )
+
+        for line in result.strip().split("\n"):
+            if "=" in line:
+                key, val = line.strip().split("=", 1)
+                size_dict[key] = readable_size(int(val))
+
+    except subprocess.CalledProcessError as e:
+        print(f"[ERROR]: {database_name} Failed to get size info: {e.output.strip()}")
+    except FileNotFoundError:
+        print(f"[ERROR]: {database_name}] Script not found ")
+
+    return size_dict
+
 
 def du(path):
     try:
