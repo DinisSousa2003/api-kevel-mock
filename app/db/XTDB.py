@@ -7,7 +7,7 @@ from imports.test_helper import GetType, PutType
 from imports.rules import Rules
 from db.queries.queriesXTDB import QueryState, QueryDiff
 from db.database import Database
-from db.queries.helper import merge_with_past, merge_with_future, readable_size, du
+from db.queries.helper import get_size_script, merge_with_past, merge_with_future
 import uuid
 from datetime import datetime, timezone
 from urllib.parse import urlparse 
@@ -67,36 +67,14 @@ class XTDB(Database):
         
     async def check_size(self):
         size_dict = {}
-        STORAGE_PATH="/tmp/xtdb-data-dir"
 
         #TODO: Using size function (NOT WORKING)
         result = await self._execute_fetchall(QueryState.SELECT_SIZE, ())
 
         print(result, type(result))
 
-        paths = {
-            "total": STORAGE_PATH,
-            "log": os.path.join(STORAGE_PATH, "log"),
-            "buffers": os.path.join(STORAGE_PATH, "buffers"),
-        }
-
-        size_dict = {}
-        for key, path in paths.items():
-            size_dict[key] = readable_size(du(path))
-
-        # Per-table sizes under buffers/v05/tables
-        tables_base = os.path.join(STORAGE_PATH, "buffers", "v05", "tables")
-        if os.path.isdir(tables_base):
-            for table in os.listdir(tables_base):
-                table_path = os.path.join(tables_base, table)
-                if os.path.isdir(table_path):
-                    size_dict[f"tables/{table}"] =  readable_size(du(table_path))
-                table_path_data = os.path.join(table_path, "data")
-                if os.path.isdir(table_path):
-                    size_dict[f"tables/data/{table}"] =  readable_size(du(table_path_data))
-                table_path_meta = os.path.join(table_path, "meta")
-                if os.path.isdir(table_path):
-                    size_dict[f"tables/meta/{table}"] =  readable_size(du(table_path_meta))
+        docker_sizes = get_size_script("terminus")
+        size_dict.update(docker_sizes)
 
         return size_dict
 

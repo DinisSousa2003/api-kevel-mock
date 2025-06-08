@@ -66,6 +66,11 @@ def merge_with_future(future, attributes, rules):
 
 def get_size_script(database_name):
     size_dict = dict()
+
+    if database_name not in ["postgres", "terminus", "xtdb2"]:
+        print(f"[ERROR]: {database_name}] Bad name ")
+        return size_dict
+
     # Run remote shell script via subprocess
     try:
         result = subprocess.check_output(

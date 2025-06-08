@@ -10,7 +10,7 @@ from terminusdb_client import WOQLQuery as wq
 from db.database import Database
 from db.queries.schema_maker_terminus import MySchema
 from db.queries.queriesTerminusDB import TerminusDBAPI
-from db.queries.helper import merge_with_past, readable_size, docker_du
+from db.queries.helper import merge_with_past, readable_size, get_size_script
 from requests.auth import HTTPBasicAuth
 import uuid
 import os
@@ -102,14 +102,8 @@ class terminusDB(Database):
         size_dict["size_func"] = readable_size(bytes)
 
         # Using docker volume sizes
-        docker_path = "terminusdb-data:/data"
-        file_path = "/data/db"
-
-        size_dict["docker_size"] = readable_size(docker_du(docker_path, file_path, "-s", multiply=1024))
-        size_dict["docker_size_apparent"] = readable_size(docker_du(docker_path, file_path, "-sb"))
-        
-        # .larch total size
-        size_dict["larch_size"] = readable_size(docker_du(docker_path, file_path, pattern="\\.larch$"))
+        docker_sizes = get_size_script("terminus")
+        size_dict.update(docker_sizes)
 
         return size_dict
 
