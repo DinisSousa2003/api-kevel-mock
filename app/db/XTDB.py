@@ -68,12 +68,12 @@ class XTDB(Database):
     async def check_size(self):
         size_dict = {}
 
-        #TODO: Using size function (NOT WORKING)
-        result = await self._execute_fetchall(QueryState.SELECT_SIZE, ())
+        # TODO: Using size function (NOT WORKING)
+        # result = await self._execute_fetchall(QueryState.SELECT_SIZE, ())
 
-        print(result, type(result))
+        # print(result, type(result))
 
-        docker_sizes = get_size_script("terminus")
+        docker_sizes = get_size_script("xtdb2")
         size_dict.update(docker_sizes)
 
         return size_dict

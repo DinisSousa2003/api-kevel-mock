@@ -1,0 +1,11 @@
+
+=== PUT SUMMARY by response type ===
+Status ALL PUT: 443 ops, avg = 0.0044s, p25 = 0.0041s, p50 = 0.0044s, p75 = 0.0046s, p90 = 0.0048s, p99 = 0.0052s
+Status PutType.MOST_RECENT: 439 ops, avg = 0.0044s, p25 = 0.0041s, p50 = 0.0044s, p75 = 0.0046s, p90 = 0.0048s, p99 = 0.0051s
+Status PutType.PAST: 4 ops, avg = 0.0050s, p25 = 0.0049s, p50 = 0.0049s, p75 = 0.0050s, p90 = 0.0052s, p99 = 0.0053s
+
+=== GET SUMMARY by response type ===
+Status ALL GET: 157 ops, avg = 0.0035s, p25 = 0.0034s, p50 = 0.0035s, p75 = 0.0035s, p90 = 0.0037s, p99 = 0.0040s
+Status GetType.CURRENT: 145 ops, avg = 0.0035s, p25 = 0.0034s, p50 = 0.0035s, p75 = 0.0035s, p90 = 0.0037s, p99 = 0.0040s
+Status GetType.TIMESTAMP: 9 ops, avg = 0.0034s, p25 = 0.0033s, p50 = 0.0035s, p75 = 0.0036s, p90 = 0.0037s, p99 = 0.0038s
+Status GetType.NO_USER_AT_TIME: 3 ops, avg = 0.0035s, p25 = 0.0034s, p50 = 0.0035s, p75 = 0.0036s, p90 = 0.0037s, p99 = 0.0037s

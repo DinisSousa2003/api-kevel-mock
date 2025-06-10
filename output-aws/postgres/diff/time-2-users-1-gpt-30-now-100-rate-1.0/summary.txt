@@ -1,0 +1,8 @@
+
+=== PUT SUMMARY by response type ===
+Status ALL PUT: 92 ops, avg = 0.0036s, p25 = 0.0035s, p50 = 0.0036s, p75 = 0.0037s, p90 = 0.0038s, p99 = 0.0046s
+Status PutType.MOST_RECENT: 92 ops, avg = 0.0036s, p25 = 0.0035s, p50 = 0.0036s, p75 = 0.0037s, p90 = 0.0038s, p99 = 0.0046s
+
+=== GET SUMMARY by response type ===
+Status ALL GET: 28 ops, avg = 0.0037s, p25 = 0.0036s, p50 = 0.0037s, p75 = 0.0038s, p90 = 0.0039s, p99 = 0.0040s
+Status GetType.CURRENT: 28 ops, avg = 0.0037s, p25 = 0.0036s, p50 = 0.0037s, p75 = 0.0038s, p90 = 0.0039s, p99 = 0.0040s

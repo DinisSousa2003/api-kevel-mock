@@ -16,13 +16,13 @@ import sys
 import time
 
 #VALID_DATABASES = ["postgres", "xtdb2", "terminus"]
-VALID_DATABASES = ["postgres", "xtdb2", "terminus"]
-MODE = ["diff", "state"]
+VALID_DATABASES = ["postgres"]
+MODE = ["state"]
 TOTAL_TIME = [1]  # in minutes
 USERS = [1]
 RATE = [10]
 PCT_GET = [30]
-PCT_NOW = [95, 100]
+PCT_NOW = [100]
 
 def main():
     if len(sys.argv) != 1:
@@ -46,7 +46,7 @@ def main():
             
             try:
                 print(f"[INFO] Running aws script: {aws_script}")
-                subprocess.run([aws_script, database, mode, str(pct_get), str(pct_now), str(tt), str(users), str(rate)], check=True)
+                subprocess.run([aws_script, database, str(tt), mode, str(pct_get), str(pct_now), str(users), str(rate)], check=True)
 
 
             except subprocess.CalledProcessError as e:
@@ -58,11 +58,11 @@ def main():
                 time.sleep(10)
 
     #4. Get the output folder from the locust machine
-    print("[INFO] Fetching all output from Locust machine...")
-    try:
-        subprocess.run(["./aws/fetch-all-output.sh"], check=True)
-    except subprocess.CalledProcessError as e:
-        print(f"[ERROR] Fetching full output failed: {e}")
+    # print("[INFO] Fetching all output from Locust machine...")
+    # try:
+    #     subprocess.run(["./aws/fetch-all-output.sh"], check=True)
+    # except subprocess.CalledProcessError as e:
+    #     print(f"[ERROR] Fetching full output failed: {e}")
         
 
 if __name__ == "__main__":

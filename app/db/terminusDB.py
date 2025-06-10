@@ -90,16 +90,16 @@ class terminusDB(Database):
             self.get_client.delete_document(doc["@id"])
 
     async def check_size(self):
-        print(f"[INFO] Running symlink script")
-        subprocess.run(["bash", "scripts/symlinks-terminus.sh"], check=True)
+        # print(f"[INFO] Running symlink script")
+        # subprocess.run(["bash", "scripts/symlinks-terminus.sh"], check=True)
 
         size_dict = {}
 
         # Using size function
-        query = self.API.get_size(self.user, self.db_name)
-        result = self.get_client.query(query)
-        bytes = result["bindings"][0]["size"]["@value"]
-        size_dict["size_func"] = readable_size(bytes)
+        # query = self.API.get_size(self.user, self.db_name)
+        # result = self.get_client.query(query)
+        # bytes = result["bindings"][0]["size"]["@value"]
+        # size_dict["size_func"] = readable_size(bytes)
 
         # Using docker volume sizes
         docker_sizes = get_size_script("terminus")

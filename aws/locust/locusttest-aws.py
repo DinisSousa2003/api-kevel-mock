@@ -59,10 +59,10 @@ def periodic_db_size_check(host):
     global running_check
     while running_check:
         try:
-            response = requests.get(f"{host}/users/{USER_MODE}/db/size/")
+            response = requests.get(f"{host}/users/{USER_MODE}/db/size")
             if response.status_code == 200:
-                size = response.json().get("size", "unknown")
-                print(f"[DB SIZE CHECK] Current size of {DB_NAME}: {size} bytes")
+                size = response.json()
+                print(f"[DB SIZE CHECK] Current size of {DB_NAME}: {size}")
             else:
                 print(f"[DB SIZE CHECK] Failed to get size for {DB_NAME}: {response.status_code}")
         except Exception as e:

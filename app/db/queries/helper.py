@@ -73,6 +73,9 @@ def get_size_script(database_name):
 
     # Run remote shell script via subprocess
     try:
+
+        print("Running script")
+
         result = subprocess.check_output(
             [
                 "bash", f"scripts/get-size-{database_name}.sh"
@@ -81,13 +84,15 @@ def get_size_script(database_name):
             text=True
         )
 
+        print(result)
+
         for line in result.strip().split("\n"):
             if "=" in line:
                 key, val = line.strip().split("=", 1)
                 size_dict[key] = readable_size(int(val))
 
     except subprocess.CalledProcessError as e:
-        print(f"[ERROR]: {database_name} Failed to get size info: {e.output.strip()}")
+        print(f"[ERROR]: {database_name} Failed to get size info: {e}")
     except FileNotFoundError:
         print(f"[ERROR]: {database_name}] Script not found ")
 
