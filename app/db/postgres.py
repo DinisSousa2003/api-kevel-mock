@@ -7,7 +7,7 @@ from psycopg.rows import dict_row
 from datetime import datetime, timezone
 from db.database import Database
 from db.queries.queriesPostgres import QueryState, QueryDiff
-from db.queries.helper import merge_with_past, merge_with_future, readable_size, get_size_script
+from db.queries.helper import merge_with_past, merge_with_future, readable_size
 from imports.models import UserProfile
 from imports.rules import Rules
 from imports.test_helper import GetType, PutType
@@ -204,10 +204,6 @@ class PostgreSQL(Database):
             rows = await cur.fetchall()
             size_dict = {item['name']: readable_size(item['size']) for item in rows}
 
-        # Add Docker size metrics from the external shell script
-        docker_sizes = get_size_script("postgres")
-        size_dict.update(docker_sizes)
-
         return size_dict
     
 
@@ -285,9 +281,5 @@ class PostgreSQL(Database):
             await cur.execute(query)
             rows = await cur.fetchall()
             size_dict = {item['name']: readable_size(item['size']) for item in rows}
-
-        # Add Docker size metrics from the external shell script
-        docker_sizes = get_size_script("postgres")
-        size_dict.update(docker_sizes)
 
         return size_dict

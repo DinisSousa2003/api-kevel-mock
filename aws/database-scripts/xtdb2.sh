@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # see https://github.com/xtdb/xtdb/pkgs/container/xtdb/versions for tags
 # `latest`: latest tagged release
 # `nightly`: built every night from `main` branch

@@ -61,6 +61,17 @@ EOF
 
 sleep 10 #wait for the server to start
 
+# Start the get database size script on the database machine
+echo "Starting locust on $DATABASE_MACHINE..."
+ssh -T -o "IdentitiesOnly=yes" -i ~/.ssh/id_ed25519 $DATABASE_MACHINE << EOF
+cd ~/code
+
+mkdir -p output
+
+bash database-scripts/get-size-"$DB_NAME".sh "$RUN_TIME" "$MODE" "$PCT_GET" "$PCT_NOW" "$USERS" "$RATE" &
+
+EOF
+
 # Start the locust on the locust machine
 echo "Starting locust on $LOCUST_MACHINE..."
 ssh -T -o "IdentitiesOnly=yes" -i ~/.ssh/id_ed25519 $LOCUST_MACHINE << EOF

@@ -10,7 +10,7 @@ from terminusdb_client import WOQLQuery as wq
 from db.database import Database
 from db.queries.schema_maker_terminus import MySchema
 from db.queries.queriesTerminusDB import TerminusDBAPI
-from db.queries.helper import merge_with_past, readable_size, get_size_script
+from db.queries.helper import merge_with_past, readable_size
 from requests.auth import HTTPBasicAuth
 import uuid
 import os
@@ -90,20 +90,13 @@ class terminusDB(Database):
             self.get_client.delete_document(doc["@id"])
 
     async def check_size(self):
-        # print(f"[INFO] Running symlink script")
-        # subprocess.run(["bash", "scripts/symlinks-terminus.sh"], check=True)
-
         size_dict = {}
 
         # Using size function
-        # query = self.API.get_size(self.user, self.db_name)
-        # result = self.get_client.query(query)
-        # bytes = result["bindings"][0]["size"]["@value"]
-        # size_dict["size_func"] = readable_size(bytes)
-
-        # Using docker volume sizes
-        docker_sizes = get_size_script("terminus")
-        size_dict.update(docker_sizes)
+        query = self.API.get_size(self.user, self.db_name)
+        result = self.get_client.query(query)
+        bytes = result["bindings"][0]["size"]["@value"]
+        size_dict["size_func"] = readable_size(bytes)
 
         return size_dict
 

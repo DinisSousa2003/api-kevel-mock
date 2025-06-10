@@ -1,6 +1,3 @@
-import subprocess
-
-
 def readable_size(num_bytes: int) -> str:
     units = ['B', 'KiB', 'MiB', 'GiB', 'TiB']
     size = float(num_bytes)
@@ -64,68 +61,3 @@ def merge_with_future(future, attributes, rules):
 
     return future
 
-def get_size_script(database_name):
-    size_dict = dict()
-
-    if database_name not in ["postgres", "terminus", "xtdb2"]:
-        print(f"[ERROR]: {database_name}] Bad name ")
-        return size_dict
-
-    # Run remote shell script via subprocess
-    try:
-
-        print("Running script")
-
-        result = subprocess.check_output(
-            [
-                "bash", f"scripts/get-size-{database_name}.sh"
-            ],
-            stderr=subprocess.STDOUT,
-            text=True
-        )
-
-        print(result)
-
-        for line in result.strip().split("\n"):
-            if "=" in line:
-                key, val = line.strip().split("=", 1)
-                size_dict[key] = readable_size(int(val))
-
-    except subprocess.CalledProcessError as e:
-        print(f"[ERROR]: {database_name} Failed to get size info: {e}")
-    except FileNotFoundError:
-        print(f"[ERROR]: {database_name}] Script not found ")
-
-    return size_dict
-
-
-def du(path):
-    try:
-        output = subprocess.check_output(["du", "-sb", path], text=True)
-        size_bytes = int(output.split()[0])
-        return size_bytes
-    except subprocess.CalledProcessError:
-        return 0
-    except FileNotFoundError:
-        return 0
-    
-def docker_du(docker, path, args="-sb", pattern=None, multiply=1):
-    try:
-        if pattern:
-            cmd = [
-                "docker", "run", "--rm", "-v", docker,
-                "alpine", "sh", "-c",
-                f"du -ba {path} | grep '{pattern}' | awk '{{sum += $1}} END {{print sum}}'"
-            ]
-        else:
-            cmd = [
-                "docker", "run", "--rm", "-v", docker,
-                "alpine", "du", args, path
-            ]
-        output = subprocess.check_output(cmd, text=True)
-        size_bytes = int(output.split()[0]) * multiply
-        return size_bytes
-    except subprocess.CalledProcessError:
-        return 0
-    except FileNotFoundError:
-        return 0

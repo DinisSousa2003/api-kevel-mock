@@ -7,7 +7,7 @@ from imports.test_helper import GetType, PutType
 from imports.rules import Rules
 from db.queries.queriesXTDB import QueryState, QueryDiff
 from db.database import Database
-from db.queries.helper import get_size_script, merge_with_past, merge_with_future
+from db.queries.helper import merge_with_past, merge_with_future
 import uuid
 from datetime import datetime, timezone
 from urllib.parse import urlparse 
@@ -68,13 +68,10 @@ class XTDB(Database):
     async def check_size(self):
         size_dict = {}
 
-        # TODO: Using size function (NOT WORKING)
+        # Using size function (COULD NOT MAKE IT WORK)
         # result = await self._execute_fetchall(QueryState.SELECT_SIZE, ())
 
         # print(result, type(result))
-
-        docker_sizes = get_size_script("xtdb2")
-        size_dict.update(docker_sizes)
 
         return size_dict
 
