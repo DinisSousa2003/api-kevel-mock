@@ -1,3 +1,5 @@
+#!/bin/bash
+
 LOCUST_MACHINE="ubuntu@ec2-44-202-179-1.compute-1.amazonaws.com"
 
 ssh -i ~/.ssh/id_ed25519 $LOCUST_MACHINE "mkdir -p ~/code"

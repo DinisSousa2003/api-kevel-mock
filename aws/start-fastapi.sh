@@ -1,3 +1,5 @@
+#!/bin/bash
+
 SERVER_MACHINE="ubuntu@ec2-13-219-246-81.compute-1.amazonaws.com"
 
 ssh -i ~/.ssh/id_ed25519 $SERVER_MACHINE "mkdir -p ~/code ~/code/envs ~/code/app"
