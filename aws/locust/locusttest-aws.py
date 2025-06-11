@@ -1,3 +1,4 @@
+import csv
 import sys
 import os
 import requests
@@ -16,6 +17,7 @@ import numpy as np
 locust.stats.CONSOLE_STATS_INTERVAL_SEC = 600
 from enum import Enum
 import gevent
+from datetime import datetime
 
 class PutType(Enum):
     PAST = 1
@@ -42,6 +44,7 @@ START = 1733011200  # Dec 1, 2024
 END = 1743379200    # Mar 31, 2025
 
 db_size_greenlet = None
+output_folder = None
 
 put_request_times = defaultdict(list)
 get_request_times = defaultdict(list)
@@ -55,16 +58,23 @@ user_id_set = set()
 def random_timestamp(start, end):
     return (start + random.randint(0, end - start)) * 1000
 
-def periodic_db_size_check(host):
+def periodic_db_size_check(host, db_name, user_mode):
     global running_check
+
+    csv_path = os.path.join(output_folder, "size_query.csv")
     while running_check:
         try:
-            response = requests.get(f"{host}/users/{USER_MODE}/db/size")
+            response = requests.get(f"{host}/users/{user_mode}/db/size")
+            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
             if response.status_code == 200:
-                size = response.json()
-                print(f"[DB SIZE CHECK] Current size of {DB_NAME}: {size}")
+                size_dict = response.json()
+                with open(csv_path, 'a') as f:
+                    for key, value in size_dict.items():
+                        f.write(f"{timestamp},{key},{value}\n")
+                print(f"[DB SIZE CHECK] Current size of {db_name}: {size_dict}")
             else:
-                print(f"[DB SIZE CHECK] Failed to get size for {DB_NAME}: {response.status_code}")
+                print(f"[DB SIZE CHECK] Failed to get size for {db_name}: {response.status_code}")
         except Exception as e:
             print(f"[DB SIZE CHECK] Error checking database size: {e}")
         gevent.sleep(3600)  # Check every hour
@@ -81,7 +91,7 @@ def init_parser(parser: argparse.ArgumentParser):
 
 @events.test_start.add_listener
 def on_test_start(environment, **kwargs):
-    global USER_MODE, PCT_GET, PCT_GET_NOW, DB_NAME, TIME, USERS, RATE, HOST, db_size_greenlet
+    global USER_MODE, PCT_GET, PCT_GET_NOW, DB_NAME, TIME, USERS, RATE, HOST, db_size_greenlet, output_folder
     USER_MODE = environment.parsed_options.mode
     PCT_GET = environment.parsed_options.pct_get
     PCT_GET_NOW = environment.parsed_options.pct_get_now
@@ -91,8 +101,10 @@ def on_test_start(environment, **kwargs):
     RATE = environment.parsed_options.rate
     HOST = environment.host
 
+    output_folder = f"output/{DB_NAME}/{USER_MODE}/time-{TIME}-users-{USERS}-gpt-{PCT_GET}-now-{PCT_GET_NOW}-rate-{RATE}"
+
     # Start background monitoring size task
-    db_size_greenlet = gevent.spawn(periodic_db_size_check, HOST)
+    db_size_greenlet = gevent.spawn(periodic_db_size_check, HOST, DB_NAME, USER_MODE)
     
     print(f"\n--- Starting test with parameters ---")
     print(f"Database: {DB_NAME}")
@@ -106,151 +118,73 @@ def on_test_start(environment, **kwargs):
 
 @events.test_stop.add_listener
 def on_test_stop(environment, **kwargs):
-    output_folder = f"output/{DB_NAME}/{USER_MODE}/time-{TIME}-users-{USERS}-gpt-{PCT_GET}-now-{PCT_GET_NOW}-rate-{RATE}"
+    global output_folder, running_check
+
     os.makedirs(output_folder, exist_ok=True)
 
     #Stop checking size (run one last time?)
-    global running_check
     running_check = False
     db_size_greenlet.kill()
 
-    summary_lines = []
+    def build_csv_row(label, times):
+        count = len(times)
+        if count == 0:
+            return [label, 0, "", "", "", "", "", "", "", ""]
+        
+        stats = get_stats(times)
+        return [
+            label,
+            count,
+            f"{stats['avg']:.6f}",
+            f"{stats['min']:.6f}",
+            f"{stats['max']:.6f}",
+            f"{stats['p25']:.6f}",
+            f"{stats['p50']:.6f}",
+            f"{stats['p75']:.6f}",
+            f"{stats['p90']:.6f}",
+            f"{stats['p99']:.6f}"
+        ]
 
-    summary_lines.append("\n=== PUT SUMMARY by response type ===")
-    #All PUT requests
+    def get_stats(times):
+        return {
+            "avg": sum(times) / len(times),
+            "min": min(times),
+            "max": max(times),
+            "p25": np.percentile(times, 25),
+            "p50": np.percentile(times, 50),
+            "p75": np.percentile(times, 75),
+            "p90": np.percentile(times, 90),
+            "p99": np.percentile(times, 99),
+        }
+
+    # === MAIN ===
+
+    csv_rows = []
+
+    # CSV Header
+    csv_rows.append(["label", "count", "avg", "min", "max", "p25", "p50", "p75", "p90", "p99"])
+
+    # PUT stats
     all_put_times = [time for times in put_request_times.values() for time in times]
-    all_avg = sum(all_put_times) / len(all_put_times)
-    all_p25 = np.percentile(all_put_times, 25)
-    all_p50 = np.percentile(all_put_times, 50)
-    all_p75 = np.percentile(all_put_times, 75)
-    all_p90 = np.percentile(all_put_times, 90)
-    all_p99 = np.percentile(all_put_times, 99)
-    summary_lines.append(
-        f"Status ALL PUT: {len(all_put_times)} ops, avg = {all_avg:.4f}s, p25 = {all_p25:.4f}s, p50 = {all_p50:.4f}s, p75 = {all_p75:.4f}s, p90 = {all_p90:.4f}s, p99 = {all_p99:.4f}s"
-    )
+    csv_rows.append(build_csv_row("ALL PUT", all_put_times))
 
     for resp_type, times in put_request_times.items():
-        avg = sum(times) / len(times)
-        p25 = np.percentile(times, 25)
-        p50 = np.percentile(times, 50)
-        p75 = np.percentile(times, 75)
-        p90 = np.percentile(times, 90)
-        p99 = np.percentile(times, 99)
-        summary_lines.append(
-            f"Status {PutType(resp_type)}: {len(times)} ops, avg = {avg:.4f}s, p25 = {p25:.4f}s, p50 = {p50:.4f}s, p75 = {p75:.4f}s, p90 = {p90:.4f}s, p99 = {p99:.4f}s"
-        )
+        label = str(PutType(resp_type))
+        csv_rows.append(build_csv_row(label, times))
 
-    summary_lines.append("\n=== GET SUMMARY by response type ===")
-
-    #All GET requests
+    # GET stats
     all_get_times = [time for times in get_request_times.values() for time in times]
-    all_avg = sum(all_get_times) / len(all_get_times)
-    all_p25 = np.percentile(all_get_times, 25)
-    all_p50 = np.percentile(all_get_times, 50)
-    all_p75 = np.percentile(all_get_times, 75)
-    all_p90 = np.percentile(all_get_times, 90)
-    all_p99 = np.percentile(all_get_times, 99)
-    summary_lines.append(
-        f"Status ALL GET: {len(all_get_times)} ops, avg = {all_avg:.4f}s, p25 = {all_p25:.4f}s, p50 = {all_p50:.4f}s, p75 = {all_p75:.4f}s, p90 = {all_p90:.4f}s, p99 = {all_p99:.4f}s"
-    )
+    csv_rows.append(build_csv_row("ALL GET", all_get_times))
 
     for resp_type, times in get_request_times.items():
-        avg = sum(times) / len(times)
-        p25 = np.percentile(times, 25)
-        p50 = np.percentile(times, 50)
-        p75 = np.percentile(times, 75)
-        p90 = np.percentile(times, 90)
-        p99 = np.percentile(times, 99)
-        summary_lines.append(
-            f"Status {GetType(resp_type)}: {len(times)} ops, avg = {avg:.4f}s, p25 = {p25:.4f}s, p50 = {p50:.4f}s, p75 = {p75:.4f}s, p90 = {p90:.4f}s, p99 = {p99:.4f}s"
-        )
+        label = str(GetType(resp_type))
+        csv_rows.append(build_csv_row(label, times))
 
-    # Write summary to file
-    summary_path = os.path.join(output_folder, "summary.txt")
-    with open(summary_path, "w") as f:
-        for line in summary_lines:
-            print(line)  # Also print to console
-            f.write(line + "\n")
-
-    # Create plots
-    def plot_distribution(times_dict, title, filename):
-        plt.figure(figsize=(10, 6))
-        for resp_type, times in times_dict.items():
-            if "GET" in title:
-                label = GetType(resp_type)
-            else:
-                label = PutType(resp_type)
-            plt.hist(times, bins=20, alpha=0.5, label=label)
-
-            # Percentile lines
-            p90 = np.percentile(times, 90)
-            p99 = np.percentile(times, 99)
-            plt.axvline(p90, color='orange', linestyle='dashed', linewidth=1)
-            plt.text(p90, plt.ylim()[1]*0.9, f'p90 ({label})', rotation=90, color='orange')
-
-            plt.axvline(p99, color='red', linestyle='dashed', linewidth=1)
-            plt.text(p99, plt.ylim()[1]*0.9, f'p99 ({label})', rotation=90, color='red')
-
-        plt.title(title)
-        plt.xlabel("Time (s)")
-        plt.ylabel("Number of Requests")
-        plt.legend()
-        plt.tight_layout()
-        plt.savefig(filename)
-        plt.close()
-
-    def plot_average_evolution(times_dict, title, filename):
-        plt.figure(figsize=(10, 6))
-        for resp_type, times in times_dict.items():
-            if "GET" in title:
-                label = GetType(resp_type)
-            else:
-                label = PutType(resp_type)
-            avg_times = [sum(times[:i+1]) / (i+1) for i in range(len(times))]
-            plt.plot(avg_times, label=label)
-
-        plt.title(title)
-        plt.xlabel("Request Number")
-        plt.ylabel("Average Time (s)")
-        plt.legend()
-        plt.tight_layout()
-        plt.savefig(filename)
-        plt.close()
-
-    def boxplot_distribution(times_dict, title, filename):
-        plt.figure(figsize=(10, 6))
-        data = [times for times in times_dict.values()]
-        #add an entry for the ALL PUT/GET requests
-        all_times = [time for times in times_dict.values() for time in times]
-        data.append(all_times)
-        plt.boxplot(data, labels=[PutType(resp_type) if "PUT" in title else GetType(resp_type) for resp_type in times_dict.keys()] + ["ALL"])
-        plt.title(title)
-        plt.ylabel("Time (s)")
-        plt.xlabel("Response Type")
-        plt.tight_layout()
-        plt.savefig(filename)
-        plt.close()
-
-    # Save plots to output folder
-    put_plot_path = os.path.join(output_folder, "put_distribution.png")
-    get_plot_path = os.path.join(output_folder, "get_distribution.png")
-
-    put_avg_plot_path = os.path.join(output_folder, "put_average_evolution.png")
-    get_avg_plot_path = os.path.join(output_folder, "get_average_evolution.png")
-
-    put_box_plot_path = os.path.join(output_folder, "put_boxplot.png")
-    get_box_plot_path = os.path.join(output_folder, "get_boxplot.png")
-
-    plot_distribution(put_request_times, "PUT Request Time Distribution", put_plot_path)
-    plot_distribution(get_request_times, "GET Request Time Distribution", get_plot_path)
-
-    plot_average_evolution(put_request_times, "PUT Request Time Evolution", put_avg_plot_path)
-    plot_average_evolution(get_request_times, "GET Request Time Evolution", get_avg_plot_path)
-
-    boxplot_distribution(put_request_times, "PUT Request Time Boxplot", put_box_plot_path)
-    boxplot_distribution(get_request_times, "GET Request Time Boxplot", get_box_plot_path)
-
-    print(f"\nSaved request time distribution plots and summary to '{output_folder}'")
+    # Write CSV summary
+    csv_path = os.path.join(output_folder, "times.csv")
+    with open(csv_path, "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerows(csv_rows)
 
 class ProfileUser(HttpUser):
 

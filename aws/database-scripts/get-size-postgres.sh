@@ -36,9 +36,9 @@ for ((i = 0; i < ITERATIONS + 1; i++)); do
     timestamp=$(date '+%Y-%m-%d %H:%M:%S')
 
     total_size=$(docker_du "$VOLUME" "/data")
+    wal_size=$(docker_du "$VOLUME" "/data/pg_wal")
     base_size=$(docker_du "$VOLUME" "/data/base")
     global_size=$(docker_du "$VOLUME" "/data/global")
-    wal_size=$(docker_du "$VOLUME" "/data/pg_wal")
 
     echo "$timestamp,total_size,$total_size"   >> "$csv_file"
     echo "$timestamp,wal_size,$wal_size"       >> "$csv_file"

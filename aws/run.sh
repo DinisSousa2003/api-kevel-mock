@@ -5,10 +5,6 @@ SERVER_MACHINE="ubuntu@ec2-13-219-246-81.compute-1.amazonaws.com"
 LOCUST_MACHINE="ubuntu@ec2-44-202-179-1.compute-1.amazonaws.com"
 SERVER_PRIVATE_IP="10.0.63.154"
 
-# Usage: ./run.sh <database_name>
-
-# Usage: ./run.sh <database_name> <run_time> <mode> <pct_get> <pct_get_now> <time<user_number> <rate>
-
 if [ $# -ne 7 ]; then
     echo "Usage: $0 <database_name> <run_time_mins> <mode> <pct_get> <pct_get_now> <user_number> <rate>"
     exit 1
@@ -61,14 +57,14 @@ EOF
 
 sleep 10 #wait for the server to start
 
-# Start the get database size script on the database machine
-echo "Starting locust on $DATABASE_MACHINE..."
+# Start the get database size script on the database machine (let it run and continue)
+echo "Starting database size script on $DATABASE_MACHINE..."
 ssh -T -o "IdentitiesOnly=yes" -i ~/.ssh/id_ed25519 $DATABASE_MACHINE << EOF
 cd ~/code
 
 mkdir -p output
 
-bash database-scripts/get-size-"$DB_NAME".sh "$RUN_TIME" "$MODE" "$PCT_GET" "$PCT_NOW" "$USERS" "$RATE" &
+nohup bash database-scripts/get-size-"$DB_NAME".sh "$RUN_TIME" "$MODE" "$PCT_GET" "$PCT_NOW" "$USERS" "$RATE" > /dev/null 2>&1 &
 
 EOF
 

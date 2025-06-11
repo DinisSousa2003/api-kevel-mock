@@ -17,8 +17,8 @@ import time
 
 #VALID_DATABASES = ["postgres", "xtdb2", "terminus"]
 VALID_DATABASES = ["postgres"]
-MODE = ["state"]
-TOTAL_TIME = [1]  # in minutes
+MODE = ["state", "diff"]
+TOTAL_TIME = [60]  # in minutes
 USERS = [1]
 RATE = [10]
 PCT_GET = [30]
@@ -57,12 +57,12 @@ def main():
                 #Wait for do over
                 time.sleep(10)
 
-    #4. Get the output folder from the locust machine
-    # print("[INFO] Fetching all output from Locust machine...")
-    # try:
-    #     subprocess.run(["./aws/fetch-all-output.sh"], check=True)
-    # except subprocess.CalledProcessError as e:
-    #     print(f"[ERROR] Fetching full output failed: {e}")
+    #4. Get the output folder from the locust and database machine
+    print("[INFO] Fetching all output from Locust and Database machine...")
+    try:
+        subprocess.run(["./aws/fetch-all-output.sh"], check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"[ERROR] Fetching full output failed: {e}")
         
 
 if __name__ == "__main__":

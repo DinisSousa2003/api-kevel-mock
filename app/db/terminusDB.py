@@ -93,10 +93,10 @@ class terminusDB(Database):
         size_dict = {}
 
         # Using size function
-        query = self.API.get_size(self.user, self.db_name)
-        result = self.get_client.query(query)
-        bytes = result["bindings"][0]["size"]["@value"]
-        size_dict["size_func"] = readable_size(bytes)
+        # query = self.API.get_size(self.user, self.db_name)
+        # result = self.get_client.query(query)
+        # bytes = result["bindings"][0]["size"]["@value"]
+        # size_dict["size_func"] = readable_size(bytes)
 
         return size_dict
 
