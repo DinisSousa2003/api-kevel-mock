@@ -12,7 +12,6 @@ import random
 import argparse
 from collections import defaultdict
 import locust.stats
-import matplotlib.pyplot as plt
 import numpy as np
 locust.stats.CONSOLE_STATS_INTERVAL_SEC = 600
 from enum import Enum
@@ -35,10 +34,11 @@ USER_MODE = "diff"
 PCT_GET = 80
 PCT_GET_NOW = 50
 DB_NAME = "xtdb2"
-TIME = 60
+TIME = 120
 USERS = 1
 RATE = 10
 HOST = "http://10.0.63.154:8000/users"
+STEP_TIME = 60
 
 START = 1733011200  # Dec 1, 2024
 END = 1743379200    # Mar 31, 2025
@@ -58,81 +58,45 @@ user_id_set = set()
 def random_timestamp(start, end):
     return (start + random.randint(0, end - start)) * 1000
 
-def periodic_db_size_check(host, db_name, user_mode):
-    global running_check
-
+def report_db_size(host, db_name, user_mode, output_folder):
     csv_path = os.path.join(output_folder, "size_query.csv")
-    while running_check:
-        try:
-            response = requests.get(f"{host}/users/{user_mode}/db/size")
-            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-
-            if response.status_code == 200:
-                size_dict = response.json()
-                with open(csv_path, 'a') as f:
-                    for key, value in size_dict.items():
-                        f.write(f"{timestamp},{key},{value}\n")
-                print(f"[DB SIZE CHECK] Current size of {db_name}: {size_dict}")
-            else:
-                print(f"[DB SIZE CHECK] Failed to get size for {db_name}: {response.status_code}")
-        except Exception as e:
-            print(f"[DB SIZE CHECK] Error checking database size: {e}")
-        gevent.sleep(3600)  # Check every hour
-
-@events.init_command_line_parser.add_listener
-def init_parser(parser: argparse.ArgumentParser):
-    parser.add_argument("--mode", default="diff", choices=["diff", "state"], help="User endpoint mode")
-    parser.add_argument("--pct-get", type=int, default=80, help="Percentage of GETs (0-100)")
-    parser.add_argument("--pct-get-now", type=int, default=50, help="Percentage of GETs without timestamp")
-    parser.add_argument("--db", type=str, required=False, default="xtdb2", help="Name of the database being used (to store output)")
-    parser.add_argument("--time", type=int, required=False, default="60", help="Time of test in minutes")
-    parser.add_argument("--user-number", type=int, required=False, default="10", help="Number of users per test")
-    parser.add_argument("--rate", type=float, required=False, default="10", help="Wait time between requests in seconds")
-
-@events.test_start.add_listener
-def on_test_start(environment, **kwargs):
-    global USER_MODE, PCT_GET, PCT_GET_NOW, DB_NAME, TIME, USERS, RATE, HOST, db_size_greenlet, output_folder
-    USER_MODE = environment.parsed_options.mode
-    PCT_GET = environment.parsed_options.pct_get
-    PCT_GET_NOW = environment.parsed_options.pct_get_now
-    DB_NAME = environment.parsed_options.db
-    TIME = environment.parsed_options.time
-    USERS = environment.parsed_options.user_number
-    RATE = environment.parsed_options.rate
-    HOST = environment.host
-
-    output_folder = f"output/{DB_NAME}/{USER_MODE}/time-{TIME}-users-{USERS}-gpt-{PCT_GET}-now-{PCT_GET_NOW}-rate-{RATE}"
-
-    # Start background monitoring size task
-    db_size_greenlet = gevent.spawn(periodic_db_size_check, HOST, DB_NAME, USER_MODE)
-    
-    print(f"\n--- Starting test with parameters ---")
-    print(f"Database: {DB_NAME}")
-    print(f"Mode: {USER_MODE}")
-    print(f"GET percentage: {PCT_GET}%")
-    print(f"GETs as of now: {PCT_GET_NOW}%")
-    print(f"Test duration: {TIME} minutes")
-    print(f"Number of users: {USERS}")
-    print(f"Rate: {RATE} seconds")
-    print(f"-------------------------------------")
-
-@events.test_stop.add_listener
-def on_test_stop(environment, **kwargs):
-    global output_folder, running_check
-
     os.makedirs(output_folder, exist_ok=True)
 
-    #Stop checking size (run one last time?)
-    running_check = False
-    db_size_greenlet.kill()
+    if not os.path.exists(csv_path):
+        with open(csv_path, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(["timestamp", "metric", "value"])
+
+    try:
+        response = requests.get(f"{host}/users/{user_mode}/db/size")
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        if response.status_code == 200:
+            size_dict = response.json()
+            with open(csv_path, 'a', newline="") as f:
+                for key, value in size_dict.items():
+                    writer = csv.writer(f)
+                    writer.writerow([timestamp, key, value])
+            print(f"[DB SIZE CHECK] Current size of {db_name}: {size_dict}")
+        else:
+            print(f"[DB SIZE CHECK] Failed to get size for {db_name}: {response.status_code}")
+    except Exception as e:
+        print(f"[DB SIZE CHECK] Error checking database size: {e}")
+
+def report_latency_stats(put_request_times, get_request_times, output_folder):
+    """Writes latency statistics to times.csv."""
+
+    csv_path = os.path.join(output_folder, "times.csv")
+    os.makedirs(output_folder, exist_ok=True)
+    file_exists = os.path.exists(csv_path)
 
     def build_csv_row(label, times):
         count = len(times)
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         if count == 0:
-            return [label, 0, "", "", "", "", "", "", "", ""]
-        
+            return [timestamp, label, 0, "", "", "", "", "", "", "", ""]
         stats = get_stats(times)
         return [
+            timestamp,
             label,
             count,
             f"{stats['avg']:.6f}",
@@ -157,34 +121,81 @@ def on_test_stop(environment, **kwargs):
             "p99": np.percentile(times, 99),
         }
 
-    # === MAIN ===
-
     csv_rows = []
+    header = ["timestamp", "label", "count", "avg", "min", "max", "p25", "p50", "p75", "p90", "p99"]
 
-    # CSV Header
-    csv_rows.append(["label", "count", "avg", "min", "max", "p25", "p50", "p75", "p90", "p99"])
-
-    # PUT stats
-    all_put_times = [time for times in put_request_times.values() for time in times]
+    all_put_times = [t for times in put_request_times.values() for t in times]
     csv_rows.append(build_csv_row("ALL PUT", all_put_times))
-
-    for resp_type, times in put_request_times.items():
-        label = str(PutType(resp_type))
+    for put_type, times in put_request_times.items():
+        label = str(PutType(put_type))
         csv_rows.append(build_csv_row(label, times))
 
-    # GET stats
-    all_get_times = [time for times in get_request_times.values() for time in times]
+    all_get_times = [t for times in get_request_times.values() for t in times]
     csv_rows.append(build_csv_row("ALL GET", all_get_times))
-
-    for resp_type, times in get_request_times.items():
-        label = str(GetType(resp_type))
+    for get_type, times in get_request_times.items():
+        label = str(GetType(get_type))
         csv_rows.append(build_csv_row(label, times))
 
-    # Write CSV summary
-    csv_path = os.path.join(output_folder, "times.csv")
-    with open(csv_path, "w", newline="") as f:
+    with open(csv_path, "a", newline="") as f:
         writer = csv.writer(f)
+        if not file_exists:
+            writer.writerow(header)
         writer.writerows(csv_rows)
+
+    print(f"[TIME STATS] Stats written to {csv_path}")
+
+
+def periodic_report(host, db_name, user_mode):
+    global running_check, output_folder
+
+    while running_check:
+        try:
+            report_db_size(host, db_name, user_mode, output_folder)
+            report_latency_stats(put_request_times, get_request_times, output_folder)
+        except Exception as e:
+            print(f"[PERIODIC REPORT] Error: {e}")
+
+        gevent.sleep(STEP_TIME * 60)
+
+@events.init_command_line_parser.add_listener
+def init_parser(parser: argparse.ArgumentParser):
+    parser.add_argument("--mode", default="diff", choices=["diff", "state"], help="User endpoint mode")
+    parser.add_argument("--pct-get", type=int, default=80, help="Percentage of GETs (0-100)")
+    parser.add_argument("--pct-get-now", type=int, default=50, help="Percentage of GETs without timestamp")
+    parser.add_argument("--db", type=str, required=False, default="xtdb2", help="Name of the database being used (to store output)")
+    parser.add_argument("--time", type=int, required=False, default="60", help="Time of test in minutes")
+    parser.add_argument("--user-number", type=int, required=False, default="10", help="Number of users per test")
+    parser.add_argument("--rate", type=int, required=False, default="10", help="Number of request per second")
+    parser.add_argument("--step-time", type=int, default=60, help="Time between storing state")
+
+@events.test_start.add_listener
+def on_test_start(environment, **kwargs):
+    global USER_MODE, PCT_GET, PCT_GET_NOW, DB_NAME, TIME, USERS, RATE, HOST, STEP_TIME, db_size_greenlet, output_folder
+    USER_MODE = environment.parsed_options.mode
+    PCT_GET = environment.parsed_options.pct_get
+    PCT_GET_NOW = environment.parsed_options.pct_get_now
+    DB_NAME = environment.parsed_options.db
+    TIME = environment.parsed_options.time
+    USERS = environment.parsed_options.user_number
+    RATE = environment.parsed_options.rate
+    STEP_TIME = environment.parsed_options.step_time
+    HOST = environment.host
+
+
+    output_folder = f"output/{DB_NAME}/{USER_MODE}/time-{TIME}-users-{USERS}-gpt-{PCT_GET}-now-{PCT_GET_NOW}-rate-{RATE}"
+
+    # Start background monitoring size task
+    report_greenlet = gevent.spawn(periodic_report, HOST, DB_NAME, USER_MODE)
+    
+    print(f"\n--- Starting test with parameters ---")
+    print(f"Database: {DB_NAME}")
+    print(f"Mode: {USER_MODE}")
+    print(f"GET percentage: {PCT_GET}%")
+    print(f"GETs as of now: {PCT_GET_NOW}%")
+    print(f"Test duration: {TIME} minutes")
+    print(f"Number of users: {USERS}")
+    print(f"Rate: {RATE} seconds")
+    print(f"-------------------------------------")
 
 class ProfileUser(HttpUser):
 
@@ -192,7 +203,6 @@ class ProfileUser(HttpUser):
         # Open the file once and keep an iterator
         self.update_file = open("dataset/updates-0.jsonl", "r")
         self.update_lines = iter(self.update_file)
-        global RATE
         self.wait_time = lambda: constant_throughput(RATE)(self)
 
     def on_stop(self):

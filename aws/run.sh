@@ -5,18 +5,19 @@ SERVER_MACHINE="ubuntu@ec2-13-219-246-81.compute-1.amazonaws.com"
 LOCUST_MACHINE="ubuntu@ec2-44-202-179-1.compute-1.amazonaws.com"
 SERVER_PRIVATE_IP="10.0.63.154"
 
-if [ $# -ne 7 ]; then
-    echo "Usage: $0 <database_name> <run_time_mins> <mode> <pct_get> <pct_get_now> <user_number> <rate>"
+if [ $# -ne 8 ]; then
+    echo "Usage: $0 <database_name> <run_time_mins> <step_time_mins> <mode> <pct_get> <pct_get_now> <user_number> <rate>"
     exit 1
 fi
 
 DB_NAME="$1"
 RUN_TIME="$2"
-MODE="$3"
-PCT_GET="$4"
-PCT_NOW="$5"
-USERS="$6"
-RATE="$7"
+STEP_TIME="$3"
+MODE="$4"
+PCT_GET="$5"
+PCT_NOW="$6"
+USERS="$7"
+RATE="$8"
 
 #DB_NAME must be one of the following:
 VALID_DB_NAMES=("postgres" "xtdb2" "terminus")
@@ -64,7 +65,7 @@ cd ~/code
 
 mkdir -p output
 
-nohup bash database-scripts/get-size-"$DB_NAME".sh "$RUN_TIME" "$MODE" "$PCT_GET" "$PCT_NOW" "$USERS" "$RATE" > /dev/null 2>&1 &
+nohup bash database-scripts/get-size-"$DB_NAME".sh "$RUN_TIME" "$MODE" "$PCT_GET" "$PCT_NOW" "$USERS" "$RATE" "$STEP_TIME"> /dev/null 2>&1 &
 
 EOF
 
@@ -82,6 +83,7 @@ docker run --rm \
     locust \
     -f locusttest-aws.py \
     --run-time "${RUN_TIME}m" \
+    --step-time "$STEP_TIME" \
     --headless \
     -u "$USERS" \
     --mode "$MODE" \

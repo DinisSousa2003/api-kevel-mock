@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ $# -ne 6 ]; then
+if [ $# -ne 7 ]; then
     echo "Usage: $0 <run_time_mins> <mode> <pct_get> <pct_get_now> <user_number> <rate>"
     exit 1
 fi
@@ -12,7 +12,7 @@ PCT_GET="$3"
 PCT_NOW="$4"
 USERS="$5"
 RATE="$6"
-
+STEP_TIME="$7"
 
 output_folder="output/$DB_NAME/$MODE/time-$RUN_TIME-users-$USERS-gpt-$PCT_GET-now-$PCT_NOW-rate-$RATE"
 
@@ -34,9 +34,7 @@ docker_du_pattern() {
 
 VOLUME="terminusdb-data:/data"
 ROOT="/data"
-MINUTES_HOUR=60
-HOUR_SECONDS=3600
-ITERATIONS=$((RUN_TIME / MINUTES_HOUR))
+ITERATIONS=$((RUN_TIME / STEP_TIME))
 
 echo "timestamp,metric,value" > "$csv_file"
 
@@ -51,5 +49,5 @@ for ((i = 0; i < ITERATIONS + 1; i++)); do
     echo "$timestamp,base_size,$base_size"     >> "$csv_file"
     echo "$timestamp,larch_size,$larch_size"   >> "$csv_file"
 
-    sleep "$HOUR_SECONDS"
+    sleep "$((STEP_TIME * 60))"
 done

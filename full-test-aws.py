@@ -18,7 +18,8 @@ import time
 #VALID_DATABASES = ["postgres", "xtdb2", "terminus"]
 VALID_DATABASES = ["postgres"]
 MODE = ["state", "diff"]
-TOTAL_TIME = [60]  # in minutes
+TOTAL_TIME = [5]  # in minutes
+STEP_TIME = [1] # in minutes
 USERS = [1]
 RATE = [10]
 PCT_GET = [30]
@@ -42,11 +43,11 @@ def main():
 
         #3. Run tests for all combinations of parameters
         print(f"[INFO] Running tests for database: {database}")
-        for mode, pct_get, pct_now, tt, users, rate in itertools.product(MODE, PCT_GET, PCT_NOW, TOTAL_TIME, USERS, RATE):
+        for mode, pct_get, pct_now, tt, st, users, rate in itertools.product(MODE, PCT_GET, PCT_NOW, TOTAL_TIME, STEP_TIME, USERS, RATE):
             
             try:
                 print(f"[INFO] Running aws script: {aws_script}")
-                subprocess.run([aws_script, database, str(tt), mode, str(pct_get), str(pct_now), str(users), str(rate)], check=True)
+                subprocess.run([aws_script, database, str(tt), str(st), mode, str(pct_get), str(pct_now), str(users), str(rate)], check=True)
 
 
             except subprocess.CalledProcessError as e:
