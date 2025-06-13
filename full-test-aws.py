@@ -17,13 +17,13 @@ import time
 
 #VALID_DATABASES = ["postgres", "xtdb2", "terminus"]
 VALID_DATABASES = ["postgres"]
-MODE = ["state", "diff"]
-TOTAL_TIME = [5]  # in minutes
-STEP_TIME = [1] # in minutes
+MODE = ["diff"]
+TOTAL_TIME = [240]  # in minutes
+STEP_TIME = [60] # in minutes, time between collecting metrics
 USERS = [1]
 RATE = [10]
 PCT_GET = [30]
-PCT_NOW = [100]
+PCT_NOW = [99]
 
 def main():
     if len(sys.argv) != 1:
