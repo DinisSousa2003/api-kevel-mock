@@ -43,7 +43,7 @@ STEP_TIME = 60
 START = 1733011200  # Dec 1, 2024
 END = 1743379200    # Mar 31, 2025
 
-db_size_greenlet = None
+report_greenlet = None
 output_folder = None
 
 put_request_times = defaultdict(list)
@@ -170,7 +170,7 @@ def init_parser(parser: argparse.ArgumentParser):
 
 @events.test_start.add_listener
 def on_test_start(environment, **kwargs):
-    global USER_MODE, PCT_GET, PCT_GET_NOW, DB_NAME, TIME, USERS, RATE, HOST, STEP_TIME, db_size_greenlet, output_folder
+    global USER_MODE, PCT_GET, PCT_GET_NOW, DB_NAME, TIME, USERS, RATE, HOST, STEP_TIME, report_greenlet, output_folder
     USER_MODE = environment.parsed_options.mode
     PCT_GET = environment.parsed_options.pct_get
     PCT_GET_NOW = environment.parsed_options.pct_get_now
@@ -196,6 +196,22 @@ def on_test_start(environment, **kwargs):
     print(f"Number of users: {USERS}")
     print(f"Rate: {RATE} seconds")
     print(f"-------------------------------------")
+
+@events.test_stop.add_listener
+def on_test_start(environment, **kwargs):
+    global running_check
+
+    #Stop periodic report
+    running_check = False
+    if report_greenlet:
+        report_greenlet.join()
+
+    #Run final report
+    try:
+        report_db_size(HOST, DB_NAME, USER_MODE, output_folder)
+        report_latency_stats(put_request_times, get_request_times, output_folder)
+    except Exception as e:
+        print(f"[PERIODIC REPORT] Error: {e}")
 
 class ProfileUser(HttpUser):
 
