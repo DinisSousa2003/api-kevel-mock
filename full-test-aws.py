@@ -10,16 +10,15 @@
 
 import itertools
 import os
-import shutil
 import subprocess
 import sys
 import time
 
 #VALID_DATABASES = ["postgres", "xtdb2", "terminus"]
-VALID_DATABASES = ["postgres"]
-MODE = ["diff"]
-TOTAL_TIME = [240]  # in minutes
-STEP_TIME = [60] # in minutes, time between collecting metrics
+VALID_DATABASES = ["xtdb2"]
+MODE = ["diff", "state"]
+TOTAL_TIME = [360]  # in minutes
+STEP_TIME = [30] # in minutes, time between collecting metrics
 USERS = [1]
 RATE = [10]
 PCT_GET = [30]

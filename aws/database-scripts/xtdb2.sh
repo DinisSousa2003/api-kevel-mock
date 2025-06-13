@@ -26,9 +26,9 @@ docker run -d -it --name="xtdb-2" --pull=always \
   -p 8080:8080 \
   -p 3000:3000 \
   -v  xtdb-data-dir:/var/lib/xtdb \
-  ghcr.io/xtdb/xtdb:2.0.0-beta6.1
+  ghcr.io/xtdb/xtdb:2.0.0
 
-# Using this image for now: https://github.com/xtdb/xtdb/pkgs/container/xtdb/374319005?tag=2.0.0-beta6.1
+# 2.0 has now been launched: https://github.com/xtdb/xtdb/pkgs/container/xtdb/435995534?tag=latest
 
 # 5432: Postgres wire-compatible server (primary API)
 # 8080: Monitoring/healthz HTTP endpoints

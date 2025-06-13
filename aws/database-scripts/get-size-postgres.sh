@@ -37,12 +37,10 @@ for ((i = 0; i < ITERATIONS + 1; i++)); do
     total_size=$(docker_du "$VOLUME" "/data")
     wal_size=$(docker_du "$VOLUME" "/data/pg_wal")
     base_size=$(docker_du "$VOLUME" "/data/base")
-    global_size=$(docker_du "$VOLUME" "/data/global")
 
     echo "$timestamp,total_size,$total_size"   >> "$csv_file"
     echo "$timestamp,wal_size,$wal_size"       >> "$csv_file"
     echo "$timestamp,base_size,$base_size"     >> "$csv_file"
-    echo "$timestamp,global_size,$global_size" >> "$csv_file"
 
     sleep "$((STEP_TIME * 60))"
 done
