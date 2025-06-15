@@ -12,10 +12,6 @@ ec2-44-202-179-1.compute-1.amazonaws.com
 ssh -o "IdentitiesOnly=yes" -i ~/.ssh/id_ed25519 ubuntu@ec2-13-219-246-81.compute-1.amazonaws.com
 ```
 
-Action oustide the script:
-Create and add a private key to the database
-Create and use the pipe /home/ubuntu/code/app/scripts/scriptspipe
-
 Private: 10.0.63.154
 
 ### Structure-SERVER
@@ -41,7 +37,7 @@ ssh -o "IdentitiesOnly=yes" -i ~/.ssh/id_ed25519 ubuntu@ec2-44-202-179-1.compute
 
 locust_command = [
     "docker", "run", "--rm",
-    "locust",  # your image name; replace if needed
+    "locust",
     "-f", "locusttest-aws.py",  # already in the container
     "--run-time", f"{tt}m",
     "--mode", mode,

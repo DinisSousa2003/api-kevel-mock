@@ -76,6 +76,8 @@ cd ~/code
 
 mkdir -p output
 
+docker rm -f locust 2>/dev/null || true
+
 docker run --rm \
     --name locust \
     --mount type=bind,src=/home/ubuntu/code/output,dst=/app/output \
