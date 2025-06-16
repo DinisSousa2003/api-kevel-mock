@@ -65,6 +65,8 @@ cd ~/code
 
 mkdir -p output
 
+pkill -f 'get-size'
+
 nohup bash database-scripts/get-size-"$DB_NAME".sh "$RUN_TIME" "$MODE" "$PCT_GET" "$PCT_NOW" "$USERS" "$RATE" "$STEP_TIME"> /dev/null 2>&1 &
 
 EOF
