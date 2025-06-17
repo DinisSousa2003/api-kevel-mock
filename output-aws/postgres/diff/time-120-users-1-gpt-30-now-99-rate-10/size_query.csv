@@ -11,3 +11,15 @@ timestamp,metric,value
 2025-06-17 14:32:22,customer_diff_pkey,296.0 KiB
 2025-06-17 14:32:22,idx_customer_diff_userid_at,1.1 MiB
 2025-06-17 14:32:22,idx_diff_at_brin,24.0 KiB
+2025-06-17 15:02:22,customer_diff_total,30.2 MiB
+2025-06-17 15:02:22,customer_diff,27.5 MiB
+2025-06-17 15:02:22,customer_diff_indexes,2.8 MiB
+2025-06-17 15:02:22,customer_diff_pkey,576.0 KiB
+2025-06-17 15:02:22,idx_customer_diff_userid_at,2.2 MiB
+2025-06-17 15:02:22,idx_diff_at_brin,24.0 KiB
+2025-06-17 15:32:22,customer_diff_total,45.5 MiB
+2025-06-17 15:32:22,customer_diff,41.4 MiB
+2025-06-17 15:32:22,customer_diff_indexes,4.1 MiB
+2025-06-17 15:32:22,customer_diff_pkey,848.0 KiB
+2025-06-17 15:32:22,idx_customer_diff_userid_at,3.2 MiB
+2025-06-17 15:32:22,idx_diff_at_brin,24.0 KiB
