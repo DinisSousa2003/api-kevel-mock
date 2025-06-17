@@ -93,7 +93,7 @@ def report_latency_stats(put_request_times, get_request_times, output_folder):
         count = len(times)
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         if count == 0:
-            return [timestamp, label, 0, "", "", "", "", "", "", "", ""]
+            return [timestamp, label, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         stats = get_stats(times)
         return [
             timestamp,

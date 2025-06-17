@@ -1,0 +1,13 @@
+timestamp,metric,value
+2025-06-17 14:02:22,customer_diff_total,96.0 KiB
+2025-06-17 14:02:22,customer_diff,16.0 KiB
+2025-06-17 14:02:22,customer_diff_indexes,80.0 KiB
+2025-06-17 14:02:22,customer_diff_pkey,16.0 KiB
+2025-06-17 14:02:22,idx_customer_diff_userid_at,16.0 KiB
+2025-06-17 14:02:22,idx_diff_at_brin,24.0 KiB
+2025-06-17 14:32:22,customer_diff_total,15.3 MiB
+2025-06-17 14:32:22,customer_diff,13.9 MiB
+2025-06-17 14:32:22,customer_diff_indexes,1.4 MiB
+2025-06-17 14:32:22,customer_diff_pkey,296.0 KiB
+2025-06-17 14:32:22,idx_customer_diff_userid_at,1.1 MiB
+2025-06-17 14:32:22,idx_diff_at_brin,24.0 KiB
