@@ -15,11 +15,11 @@ import sys
 import time
 
 #VALID_DATABASES = ["postgres", "xtdb2", "terminus"]
-VALID_DATABASES = ["xtdb2"]
+VALID_DATABASES = ["xtdb2", "postgres"]
 MODE = ["state", "diff"]
 TOTAL_TIME = [120]  # in minutes
 STEP_TIME = [30] # in minutes, time between collecting metrics
-USERS = [1]
+USERS = [10]
 RATE = [10]
 PCT_GET = [30]
 PCT_NOW = [99]

@@ -48,17 +48,17 @@ def analyse_jsonl(file_path, output_path="analysis/analyse.png"):
     #     for times in user_timestamps.values() if len(times) > 1
     # ]) if user_timestamps else 0
 
-    plt.figure(figsize=(18, 10))
+    plt.figure(figsize=(18, 18))
 
     # 1. Distribution of updates per user
-    plt.subplot(2, 3, 1)
+    plt.subplot(3, 3, 7)
     data = list(user_updates.values())
     hist, bins, _ = plt.hist(data, bins=40)
     plt.xlabel('Updates per User')
     plt.ylabel('Density')
     plt.title('Distribution of Updates per User')
     
-    plt.subplot(2, 3, 4)
+    plt.subplot(3, 3, 4)
     logbins = np.logspace(np.log10(bins[0]),np.log10(bins[-1]),len(bins))
     plt.hist(data, bins=logbins, color="blue")
     plt.xscale("log")
@@ -67,46 +67,39 @@ def analyse_jsonl(file_path, output_path="analysis/analyse.png"):
     plt.title('Distribution of Updates per User')
 
     # 2. Distribution of updates per attribute
-    plt.subplot(2, 3, 2)
+    plt.subplot(3, 3, 8)
     data = list(attribute_updates.values())
     hist, bins, _ = plt.hist(data, bins=40)
-    plt.xlabel('Updates per User')
+    plt.xlabel('Updates per Attribute')
     plt.ylabel('Density')
-    plt.title('Distribution of Updates per User')
+    plt.title('Distribution of Updates per Attribute')
     
-    plt.subplot(2, 3, 5)
+    plt.subplot(3, 3, 5)
     logbins = np.logspace(np.log10(bins[0]),np.log10(bins[-1]),len(bins))
     plt.hist(data, bins=logbins, color="green")
     plt.xscale("log")
-    plt.xlabel('Updates per User')
+    plt.xlabel('Updates per Attribute')
     plt.ylabel('Density')
-    plt.title('Distribution of Updates per User')
+    plt.title('Distribution of Updates per Attribute')
 
     # 3. Distribution of number of attribute keys per update
-    plt.subplot(2, 3, 3)
+    plt.subplot(3, 3, 9)
     data = attribute_keys_count
     hist, bins, _ = plt.hist(data, bins=40)
-    plt.xlabel('Updates per User')
+    plt.xlabel('Number of Keys per Update')
     plt.ylabel('Density')
-    plt.title('Distribution of Updates per User')
+    plt.title('Distribution of Attribute Keys per Update')
     
-    plt.subplot(2, 3, 6)
+    plt.subplot(3, 3, 6)
     logbins = np.logspace(np.log10(bins[0]),np.log10(bins[-1]),len(bins))
     plt.hist(data, bins=logbins, color="red")
     plt.xscale("log")
-    plt.xlabel('Updates per User')
+    plt.xlabel('Number of Keys per Update')
     plt.ylabel('Density')
-    plt.title('Distribution of Updates per User')
-
-    plt.tight_layout()
-    plt.savefig(output_path)
-    print(f"Visualization saved to {output_path}")
-    plt.close()
-
-    plt.figure(figsize=(18, 10))
+    plt.title('Distribution of Attribute Keys per Update')
 
     # Boxplot of updates per user (horizontal, log-scale)
-    plt.subplot(1, 3, 1)
+    plt.subplot(3, 3, 1)
     plt.boxplot(list(user_updates.values()), vert=False)
     plt.xscale('log')
     plt.xlabel('Updates per User')
@@ -114,7 +107,7 @@ def analyse_jsonl(file_path, output_path="analysis/analyse.png"):
     plt.grid(True, axis='x')
 
     # Boxplot of updates per attribute
-    plt.subplot(1, 3, 2)
+    plt.subplot(3, 3, 2)
     plt.boxplot(list(attribute_updates.values()), vert=False)
     plt.xscale('log')
     plt.xlabel('Updates per Attribute')
@@ -122,7 +115,7 @@ def analyse_jsonl(file_path, output_path="analysis/analyse.png"):
     plt.grid(True, axis='x')
 
     # Boxplot of number of attribute keys per update
-    plt.subplot(1, 3, 3)
+    plt.subplot(3, 3, 3)
     plt.boxplot(attribute_keys_count, vert=False)
     plt.xscale('log')
     plt.xlabel('Number of Keys per Update')
@@ -130,8 +123,10 @@ def analyse_jsonl(file_path, output_path="analysis/analyse.png"):
     plt.grid(True, axis='x')
 
     plt.tight_layout()
-    plt.savefig(output_path.replace(".png", "_boxplot.png"))
-    print(f"Boxplot visualization saved to {output_path.replace('.png', '_boxplot.png')}")
+    plt.savefig(output_path)
+    print(f"Visualization saved to {output_path}")
+    plt.close()
+
     plt.close()
         # return {
     #     "Total Number of Updates": total_updates,
@@ -146,7 +141,7 @@ def analyse_jsonl(file_path, output_path="analysis/analyse.png"):
 
 # Example usage:
 file_path = "../dataset/updates-0.jsonl"  # Replace with your actual file path
-stats = analyse_jsonl(file_path, "analysis/analyse_log.png")
+stats = analyse_jsonl(file_path, "analysis/analyse_log_all.png")
 # print(stats)
 
 # with open("analysis/stats.txt", "w") as file:
