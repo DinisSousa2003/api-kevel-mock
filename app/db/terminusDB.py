@@ -92,7 +92,7 @@ class terminusDB(Database):
     async def check_size(self):
         size_dict = {}
 
-        # Using size function
+        # Using size function - should work for terminus v11.1.15 and beyond
         # query = self.API.get_size(self.user, self.db_name)
         # result = self.get_client.query(query)
         # bytes = result["bindings"][0]["size"]["@value"]
