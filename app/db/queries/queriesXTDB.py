@@ -50,13 +50,12 @@ class QueryDiff():
     INSERT_WITH_TIME = """INSERT INTO customer_diff RECORDS {_id: %s, userId: %s, attributes: %s, _valid_from: %s}"""
     
     SELECT_DIFFS_USER_UP_TO_VT = """SELECT attributes, _valid_from FROM customer_diff
-                    FOR ALL VALID_TIME
-                    WHERE userId = %s AND _valid_from <= %s
+                    FOR VALID_TIME AS OF %s
+                    WHERE userId = %s
                     ORDER BY _valid_from;"""
     
     SELECT_DIFFS_USER = """SELECT attributes, _valid_from FROM customer_diff
-                    FOR ALL VALID_TIME
-                    WHERE userId = %s AND _valid_from <= CURRENT_TIMESTAMP()
+                    WHERE userId = %s
                     ORDER BY _valid_from;"""
     
     SELECT_ALL_USERS = """SELECT DISTINCT userId
