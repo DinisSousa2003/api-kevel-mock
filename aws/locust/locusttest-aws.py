@@ -276,10 +276,13 @@ class ProfileUser(HttpUser):
         response = self.client.get(f"/users/{USER_MODE}/{user_id}", headers=headers, params=params)
         elapsed = response.elapsed.total_seconds()
 
-        if response.status_code == 404:
-            response_type = GetType.NO_USER_AT_TIME
-        else:
-            data = response.json()
-            response_type = data.get("response", "UNKNOWN")
+        try:
+            if response.status_code == 404:
+                response_type = GetType.NO_USER_AT_TIME
+            else:
+                data = response.json()
+                response_type = data.get("response", "UNKNOWN")
 
-        get_request_times[response_type].append(elapsed)
+            get_request_times[response_type].append(elapsed)
+        except Exception as e:
+            print(f"[GET] Error: {e}")
