@@ -204,7 +204,7 @@ class XTDB(Database):
         if timestamp: 
             query = QueryDiff.SELECT_DIFFS_USER_UP_TO_VT
             dt = datetime.fromtimestamp(timestamp/1000, tz=timezone.utc) #ms to seconds
-            params = (userId, dt)
+            params = (dt, userId)
             typeResponse = GetType.TIMESTAMP
 
         else:
