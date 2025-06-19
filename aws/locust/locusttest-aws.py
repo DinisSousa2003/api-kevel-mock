@@ -59,6 +59,10 @@ def random_timestamp(start, end):
     return (start + random.randint(0, end - start)) * 1000
 
 def report_db_size(host, db_name, user_mode, output_folder):
+
+    if db_name == "terminus":
+        return
+
     csv_path = os.path.join(output_folder, "size_query.csv")
     os.makedirs(output_folder, exist_ok=True)
 
@@ -88,10 +92,10 @@ def report_latency_stats(put_request_times, get_request_times, output_folder):
     csv_path = os.path.join(output_folder, "times.csv")
     os.makedirs(output_folder, exist_ok=True)
     file_exists = os.path.exists(csv_path)
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-    def build_csv_row(label, times):
+    def build_csv_row(label, times, timestamp):
         count = len(times)
-        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         if count == 0:
             return [timestamp, label, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         stats = get_stats(times)
@@ -125,16 +129,16 @@ def report_latency_stats(put_request_times, get_request_times, output_folder):
     header = ["timestamp", "label", "count", "avg", "min", "max", "p25", "p50", "p75", "p90", "p99"]
 
     all_put_times = [t for times in put_request_times.values() for t in times]
-    csv_rows.append(build_csv_row("ALL PUT", all_put_times))
+    csv_rows.append(build_csv_row("ALL PUT", all_put_times, timestamp))
     for put_type, times in put_request_times.items():
         label = str(PutType(put_type))
-        csv_rows.append(build_csv_row(label, times))
+        csv_rows.append(build_csv_row(label, times, timestamp))
 
     all_get_times = [t for times in get_request_times.values() for t in times]
-    csv_rows.append(build_csv_row("ALL GET", all_get_times))
+    csv_rows.append(build_csv_row("ALL GET", all_get_times, timestamp))
     for get_type, times in get_request_times.items():
         label = str(GetType(get_type))
-        csv_rows.append(build_csv_row(label, times))
+        csv_rows.append(build_csv_row(label, times, timestamp))
 
     with open(csv_path, "a", newline="") as f:
         writer = csv.writer(f)
