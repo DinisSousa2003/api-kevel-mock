@@ -9,3 +9,4 @@ class GetType(Enum):
     CURRENT = 1
     TIMESTAMP = 2
     NO_USER_AT_TIME = 3
+    PAST = 4

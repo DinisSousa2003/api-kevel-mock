@@ -173,6 +173,7 @@ class terminusDB(Database):
                         self.client.ref = commit
                         doc = self.client.get_document(id)
                         self.client.ref = None  # Reset reference to the latest commit
+                    typeResponse = GetType.PAST
                     
                 else:
                     return (None, GetType.NO_USER_AT_TIME)

@@ -69,6 +69,8 @@ class TerminusDBAPI():
         response = requests.request("GET", url, auth=self.auth)
         commits = json.loads(response.text)
 
+        #print(f"[INFO] Commits: {commits}, commit type: {type(commits)}, first commit: {commits[0] if commits else 'No commits'}, commit type of first: {type(commits[0]) if commits else 'No commits'}")
+
         #2. In Terminus (with state), we are enforcing that the commits are made in order, so the commits are already sorted
         index = bisect.bisect_right([-(int(commit['message'])) for commit in commits], -timestamp)
         

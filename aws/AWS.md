@@ -58,4 +58,4 @@ Private: 10.0.60.7
 - [x] Server running
 - [x] Pinging from other EC2 instance to server
 - [x] Connect server with database
-- [ ] Sending requests from my computer
+- [x] Sending requests from my computer
