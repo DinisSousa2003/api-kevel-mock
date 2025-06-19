@@ -35,7 +35,7 @@ ssh -T -o "IdentitiesOnly=yes" -i ~/.ssh/id_ed25519 $DATABASE_MACHINE << EOF
 bash ~/code/database-scripts/"$DB_NAME".sh
 EOF
 
-sleep 30 #needed becuase xtdb takes a while to start
+sleep 40 #needed becuase xtdb takes a while to start
 
 # Copy the correct .env file to the server machine
 echo "Copying .env file for '$DB_NAME' and starting server on $SERVER_MACHINE..."
