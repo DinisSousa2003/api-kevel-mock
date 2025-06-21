@@ -66,7 +66,10 @@ class TerminusDBAPI():
 
         #1. Get all the commits associated with a document
 
-        response = requests.request("GET", url, auth=self.auth)
+        response = requests.request("GET", url, auth=self.auth, timeout=5)
+        if response.status_code != 200:
+            print(f"[ERROR] Failed to fetch history for {customer_id} at {timestamp}. Status code: {response.status_code}, Response: {response.text}")
+            return None
         commits = json.loads(response.text)
 
         #print(f"[INFO] Commits: {commits}, commit type: {type(commits)}, first commit: {commits[0] if commits else 'No commits'}, commit type of first: {type(commits[0]) if commits else 'No commits'}")
