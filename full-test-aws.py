@@ -20,7 +20,7 @@ MODE = ["state"]
 TOTAL_TIME = [120]  # in minutes
 STEP_TIME = [30] # in minutes, time between collecting metrics
 USERS = [1]
-RATE = [10]
+RATE = [1]
 PCT_GET = [30]
 PCT_NOW = [99]
 

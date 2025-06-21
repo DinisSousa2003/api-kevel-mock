@@ -53,7 +53,9 @@ cp ~/code/envs/"$DB_NAME".env ~/code/.env
 
 cd ~/code
 
-docker run --env-file .env -d -p 8000:8000 my-api
+docker rm -f my-api 2>/dev/null || true
+
+docker run --rm --name my-api --env-file .env -d -p 8000:8000 my-api
 EOF
 
 sleep 10 #wait for the server to start
