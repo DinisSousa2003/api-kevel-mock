@@ -5,4 +5,4 @@ Median Number of Updates per ID: 8.0
 Average Number of Keys per Attribute Dict: 2.2068358735043585
 Median Number of Keys per Attribute Dict: 1.0
 Total Number of Different Keys: 818
-Average Time Between Updates (hours): 10.820297739116333
+Update rate (updates/second): 1.6398446485479723

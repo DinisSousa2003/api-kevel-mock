@@ -4,7 +4,7 @@
 
 LOCUST_MACHINE="ubuntu@ec2-44-202-179-1.compute-1.amazonaws.com"
 DATABASE_MACHINE="ubuntu@ec2-44-222-181-38.compute-1.amazonaws.com"
-REMOTE_OUTPUT_DIR="/home/ubuntu/code/output/terminus/state" #TOOO: Update this path if necessary
+REMOTE_OUTPUT_DIR="/home/ubuntu/code/output/terminus/" #TOOO: Update this path if necessary
 
 SSH_OPTIONS="-i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes"
 

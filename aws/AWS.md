@@ -34,28 +34,6 @@ code -> Dockerfile, app, requirements.txt
 
 ```bash
 ssh -o "IdentitiesOnly=yes" -i ~/.ssh/id_ed25519 ubuntu@ec2-44-202-179-1.compute-1.amazonaws.com
-
-locust_command = [
-    "docker", "run", "--rm",
-    "locust",
-    "-f", "locusttest-aws.py",  # already in the container
-    "--run-time", f"{tt}m",
-    "--mode", mode,
-    "--pct-get", str(pct_get),
-    "--pct-get-now", str(pct_now),
-    "--db", database,
-    "--time", str(tt),
-    "--user-number", str(users),
-    "--rate", str(rate),
-    "--host", "http://127.0.0.1:8000"
-]
 ```
 
 Private: 10.0.60.7
-
-### TODO
-
-- [x] Server running
-- [x] Pinging from other EC2 instance to server
-- [x] Connect server with database
-- [x] Sending requests from my computer

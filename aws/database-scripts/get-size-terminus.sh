@@ -29,7 +29,7 @@ docker_du_pattern() {
     local mount=$1
     local path=$2
     local pattern=$3
-    docker run --rm -v "$mount" alpine sh -c du -ba "$path" 2>/dev/null | awk '{{sum += $1}} END {{print sum}}'
+    docker run --rm -v "$mount" alpine sh -c "find $path -type f -name '$pattern' -exec du -b {} + | awk '{sum += \$1} END {print sum}'"
 }
 
 VOLUME="terminusdb-data:/data"
@@ -43,7 +43,7 @@ for ((i = 0; i < ITERATIONS + 1; i++)); do
 
     total_size=$(docker_du "$VOLUME" "/data")
     base_size=$(docker_du "$VOLUME" "/data/db")
-    larch_size=$(docker_du_pattern "$VOLUME" "/data/db" "\\.larch$")
+    larch_size=$(docker_du_pattern "$VOLUME" "/data/db" "*.larch")
 
     echo "$timestamp,total_size,$total_size"   >> "$csv_file"
     echo "$timestamp,base_size,$base_size"     >> "$csv_file"
